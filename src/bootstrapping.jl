@@ -328,16 +328,16 @@ function bootstrap_gp(x::T1, t::T1, u::T2,
 
         ## Parameter estimation 
         @views learn_equations!(x, t, u,
-            f, fₜ, fₓₓ, fₜ,
+            f, fₜ, fₓ, fₓₓ,
             T, D, D′, R, T_params, D_params, R_params,
             delayBases[:, j], diffusionBases[:, j], reactionBases[:, j], stacked_params,
             lowers, uppers, bootstrap_setup.constrained, obj_values,
             bootstrap_setup.obj_scale_GLS, bootstrap_setup.obj_scale_PDE,
             N, V, Δx, pde_setup.LHS, pde_setup.RHS, initialCondition, pde_setup.finalTime, pde_setup.alg, pde_setup.δt,
-            pde_setup.meshPoints, SSEArray, initialCondition,
+            pde_setup.meshPoints, SSEArray,
             Du, Ru, D′u, TuP, DuP, RuP, D′uP, RuN,
             inIdx, unscaled_t̃, tt, d, r,
-            errs, loss, MSE, optim_setup,
+            errs, MSE, optim_setup,
             iterate_idx, closest_idx, nodes, weights, show_losses, σₙ)
 
         print("Bootstrapping: Step $j of $B. Previous objective value: $(minimum(obj_values)).\u001b[1000D")
