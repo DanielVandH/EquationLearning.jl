@@ -1,0 +1,13 @@
+name = "EquationLearning"
+uuid = "bff85f54-4e10-4475-8cea-b2bdf0d9c3a9"
+authors = ["DanielVandH <danj.vandenheuvel@gmail.com> and contributors"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
