@@ -8,8 +8,6 @@
 ## The following functions are defined:
 ##  - sysdegeneral!: Computes the system of ODEs in a discretised
 ##      delay-reaction-diffusion PDE.
-##  - sysdegeneral2!: Same as sysdegeneral!, but used when allowing 
-##      automatic differentiation.
 ##  - compute_initial_conditions: Computes initial conditions to use.
 ##  - compute_valid_pde_indices: Checks which bootstrap iterates will 
 ##      lead to a solution that exists.
@@ -51,6 +49,10 @@ The values are updated in-place into the vector `dudt` for the new value of `dud
 """
 function sysdegeneral!(dudt, u, p, t)
     N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, DD, RR, T, D, R, tb, db, rb, D_params, R_params, T_params = p
+    if typeof(D) <: PreallocationTools.DiffCache # If we're doing automatic differentiation 
+        DD = get_tmp(DD, D(u[1], db, D_params))
+        RR = get_tmp(RR, R(u[1], tb, D_params))
+    end
     for (j, uval) in enumerate(u)
         DD[j] = D(uval, db, D_params)
         RR[j] = R(uval, rb, R_params)
@@ -60,34 +62,6 @@ function sysdegeneral!(dudt, u, p, t)
         dudt[1] = 1.0 / V[1] * ((DD[1] + DD[2]) / 2.0 * ((u[2] - u[1]) / h[1]) - a₀ / b₀ * DD[1] * u[1]) + c₀ / (b₀ * V[1]) * DD[1] + RR[1]
         for i = 2:(N-1)
             dudt[i] = 1 / V[i] * ((DD[i] + DD[i+1]) / 2.0 * ((u[i+1] - u[i]) / h[i]) - ((DD[i-1] + DD[i])) / 2.0 * ((u[i] - u[i-1]) / h[i-1])) + RR[i]
-        end
-        dudt[N] = 1.0 / V[N] * (-a₁ / b₁ * DD[N] * u[N] - ((DD[N-1] + DD[N]) / 2.0) * ((u[N] - u[N-1]) / h[N-1])) + c₁ / (b₁ * V[N]) * DD[N] + RR[N]
-    end
-    dudt .*= Tt # Delay
-    return nothing
-end
-
-"""
-    sysdegeneral2!(dudt, u, p, t)
-
-This function is the same as [`sysdegeneral2!`](@ref), except with the extra lines 
-- `DD = get_tmp(DD, D(u[1], db, D_params))`
-- `get_tmp(RR, R(u[1], tb, D_params))`
-that allow for easy use with automatic differentiation, assuming that `DD` and `RR` are dual caches from PreallocationTools.
-"""
-function sysdegeneral2!(dudt, u, p, t)
-    N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, DD, RR, T, D, R, tb, db, rb, D_params, R_params, T_params = p
-    DD = get_tmp(DD, D(u[1], db, D_params))
-    RR = get_tmp(RR, R(u[1], tb, D_params))
-    for (j, uval) in enumerate(u)
-        DD[j] = D(uval, db, D_params)
-        RR[j] = R(uval, rb, R_params)
-    end
-    Tt = T(t, tb, T_params)
-    @muladd @inbounds begin
-        dudt[1] = 1.0 / V[1] * ((DD[1] + DD[2]) / 2.0 * ((u[2] - u[1]) / h[1]) - a₀ / b₀ * DD[1] * u[1]) + c₀ / (b₀ * V[1]) * DD[1] + RR[1]
-        for i = 2:(N-1)
-            dudt[i] = 1.0 / V[i] * ((DD[i] + DD[i+1]) / 2.0 * ((u[i+1] - u[i]) / h[i]) - ((DD[i-1] + DD[i])) / 2.0 * ((u[i] - u[i-1]) / h[i-1])) + RR[i]
         end
         dudt[N] = 1.0 / V[N] * (-a₁ / b₁ * DD[N] * u[N] - ((DD[N-1] + DD[N]) / 2.0) * ((u[N] - u[N-1]) / h[N-1])) + c₁ / (b₁ * V[N]) * DD[N] + RR[N]
     end
