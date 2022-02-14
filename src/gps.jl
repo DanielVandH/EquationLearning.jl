@@ -328,7 +328,7 @@ function compute_joint_GP(gp::GPBase, X̃; nugget = 1e-10)
 end
 
 """
-    draw_gp!(F, μ, L, z, ℓz) 
+    draw_gp!(F, μ, L::LowerTriangular, z, ℓz) 
     
 Draws a random sample from a Gaussian process with mean `μ` and 
 covariance matrix `Σ = LLᵀ` corresponding to `z ∼ N(0, I)`.
@@ -336,14 +336,38 @@ covariance matrix `Σ = LLᵀ` corresponding to `z ∼ N(0, I)`.
 # Arguments
 - `F`: Cache array used for storing the random sample.
 - `μ`: The mean vector.
-- `L`: The Cholesky factor of the covariance matrix.
+- `L::LowerTriangular`: The Cholesky factor of the covariance matrix.
 - `z`: The random sample from `z ∼ N(0, I)`.
 - `ℓz`: Cache array for storing the result of the matrix-vector product `Lz`.
 
 # Outputs 
 The random sample is updated in-place into `F`.
 """
-@inline function draw_gp!(F, μ, L, z, ℓz)
-    F .= μ + mul!(ℓz, LowerTriangular(L), z)
+@inline function draw_gp!(F, μ, L::LowerTriangular, z, ℓz)
+    F .= μ + mul!(ℓz, L, z)
     return nothing
+end
+
+"""
+    precompute_gp_mean(x, t, u, gp_setup::GP_Setup, bootstrap_setup::Bootstrap_Setup)   
+
+Computes the Gaussian process and corresponding mean vector and Cholesky factor for a 
+joint Gaussian process defined by the data `(x, t, u)`. See also 
+[`compute_joint_GP`](@ref) and [`bootstrap_gp`](@ref).
+
+# Arguments 
+- `x`: The spatial data. 
+- `t`: The temporal data.
+- `u`: The targets corresponding to `(x, t)`.
+- `gp_setup::GP_Setup`: A [`GP_Setup`](@ref) struct for setting up the Gaussian process parameters. 
+- `bootstrap_setup::Bootstrap_Setup`: A [`Bootstrap_Setup`](@ref) struct for defining the bootstrapping grid.
+
+# Outputs 
+- `gp_setup`: The mutable struct `gp_setup` is updated with the fitted Gaussian process `gp` and the mean vector and Cholesky factor.
+"""
+function precompute_gp_mean(x, t, u, gp_setup::GP_Setup, bootstrap_setup::Bootstrap_Setup)
+    gp_setup.gp = fit_GP(x, t, u, gp_setup)
+    _, _, _, _, _, _, Xₛ, _, _ = bootstrap_grid(x, t, bootstrap_setup.bootₓ, bootstrap_setup.bootₜ)
+    gp_setup.μ, gp_setup.L = compute_joint_GP(gp_setup.gp, Xₛ; nugget = gp_setup.nugget)
+    return gp_setup
 end
