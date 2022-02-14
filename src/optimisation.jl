@@ -49,9 +49,9 @@ Computes the loss function for the nonlinear least squares problem at `αβγ`.
 - `R_params`: Extra parameters for the reaction function. 
 - `T_params`: Extra parameters for the delay function.
 - `iterate_idx`: Vector used for indexing the values in `u` corresponding to different times.
-- `closest_idx`: Vector used for indexing the points in the PDE's meshpoints that are closet to the actual spatial data used for fitting the Gaussian process.
+- `closest_idx`: Vector used for indexing the points in the PDE's meshpoints that are closest to the actual spatial data used for fitting the Gaussian process.
 - `σₙ`: The standard deviation of the observation noise of the Gaussian process.
-- `PDEkwargs...`: The keyword arguments to use in [`DifferentialEquations.solve`](@ref).
+- `PDEkwargs...`: The keyword arguments to use in `DifferentialEquations.solve`.
 
 # Extended help
 There are two types of loss functions currently considered, namely `"GLS"` and `"PDE"`. For `"PDE"`, the loss function is 
@@ -133,4 +133,128 @@ function loss_function(αβγ; u,
         @printf "Scaled GLS loss contribution: %.6g. Scaled PDE loss contribution: %.6g.\n" GLSC PDEC
     end
     return total_loss
+end
+
+"""
+    learn_equations!(<arguments>) 
+
+Estimate values for the delay, diffusion, and reaction parameters. See [`bootstrap_gp`](@ref) and [`loss_function`](@ref).
+
+# Arguments
+- `x`: The spatial data.
+- `t`: The temporal data.
+- `u`: The density data.
+- `f`: Computed values of `f(x, t)`.
+- `fₜ`: Computed values of `fₜ(x, t)`.
+- `fₓ`: Computed values of `fₓ(x, t)`.
+- `fₓₓ`: Computed values of `fₓₓ(x, t)`.
+- `T::Function`: The delay function, given in the form `T(t, α., )`.
+- `D::Function`: The diffusion function, given in the form `D(u, β...)`.
+- `D′::Function`: The derivative of the diffusion function, given in the form `D′(u, β...)`.
+- `R::Function`: The reaction function, given in the form `R(u, γ...)`.
+- `T_params`: Additional known parameters for the delay function.
+- `D_params`: Additional known parameters for the diffusion function.
+- `R_params`: Additional known parameters for the reaction function. 
+- `α`: Initial estimates for the delay parameters.
+- `β`: Initial estimates for the diffusion parameters. 
+- `γ`: Initial estimates for the reaction parameters.
+- `stacked_params`: Matrix which stores parameter values at each optimisation restart. The columns take the form `[α₀; β₀; γ₀]`.
+- `lowers`: Lower bounds to use for constructing the Latin hypersquare design, and for the constrained problem if `bootstrap_setup.constrained = true`.
+- `uppers`: Upper bounds to use for constructing the Latin hypersquare design, and for the constrained problem if `bootstrap_setup.constrained = true`.
+- `constrained`: `true` if the optimisation problems should be constrained, and `false` otherwise.
+- `obj_values`: Cache array for storing the objective function values at each optimisation restart.
+- `obj_scale_GLS`: The amount by which the GLS loss function should be scaled.
+- `obj_scale_PDE`: The amount by which the PDE loss function should be scaled.
+- `N`: The number points.
+- `V`: The volume of each cell in the spatial mesh.
+- `Δx`: The spacing between each point in the spatial mesh.
+- `LHS`: Vector defining the left-hand boundary conditions for the PDE. See also the definitions of `(a₀, b₀, c₀)` in [`sysdegeneral!`](@ref).
+- `RHS`: Vector defining the right-hand boundary conditions for the PDE. See also the definitions of `(a₁, b₁, c₁)` in [`sysdegeneral!`](@ref).
+- `initialCondition`: The initial condition to use for the PDE.
+- `finalTime`: The final time to give the solution to the PDE at.
+- `alg`: The algorithm to use for solving the discretised PDE.
+- `δt`: A vector specifying the times to return the solution to the discretised PDE at.
+- `meshPoints`: The spatial mesh to use for solving the PDEs involved when computing the `"GLS"` loss function.
+- `SSEArray`: Cache array for storing the solutions to the PDE. 
+- `Du`: Cache array for storing the values of the diffusion function at the mesh points. Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
+- `Ru`: Cache array for storing the values of the reaction function at the mesh points.  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
+- `D′u`: Cache array for storing the values of the derivative of the diffusion function at the mesh points.  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
+- `TuP`: Cache array for storing the values of the delay function at the unscaled times (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
+- `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
+- `RuP`: Cache array for storing the values of the reaction function at the estimated density values (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
+- `D′uP`: Cache array for storing the values of the derivative of the diffusion function at the estimated density values (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
+- `RuN`: For storing values of the reaction function at Gauss-Legendre quadrature nodes.  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
+- `inIdx`: Indices in `f` (and `fₜ`) that should be used in the optimisation process. See aso [`data_thresholder`](@ref).
+- `unscaled_t̃`: Unscaled `t` values for the bootstrapping grid. 
+- `tt`: Number of delay parameters.
+- `d`: Number of diffusion parameters.
+- `r`: Number of reaction reaction parameters.
+- `errs`: Cache array for storing the individual error values. Should be defined as a `PreallocationTools.DiffCache` type.
+- `MSE`: Cache array for storing the individual squared errors. Should be defined as a `PreallocationTools.DiffCache` type.
+- `optim_setup`: An `Optim.Options` struct used for defining options in `Optim.optimize`.
+- `iterate_idx`: Indices to use on the data for finding indices corresponding to specific time values. See the definition in [`bootstrap_gp`](@ref).
+- `closest_idx`: Points in the spatial mesh for the ODEs that are closest to the positions in the spatial data `x`. See the definition in [`bootstrap_gp`](@ref).
+- `nodes`: The Gauss-Legendre quadrature nodes.
+- `weights`: The Gauss-Legendre quadrature weights.
+- `show_losses`: `true` if the loss function should be printed to the REPL throughout the optimisation process, and `false` otherwise.
+- `σₙ`: The standard deviation of the observation noise, estimated from the Gaussian process.
+- `PDEkwargs...`: The keyword arguments to use in `DifferentialEquations.solve`.
+
+# Outputs 
+The estimates for the delay parameters, `α`, diffusion parameters, `β`, and reaction parameters, 
+`γ`, are updated in-place.
+"""
+function learn_equations!(x, t, u, 
+    f, fₜ, fₓ, fₓₓ,
+    T, D, D′, R, T_params, D_params, R_params,
+    α, β, γ, stacked_params, 
+    lowers, uppers, constrained, obj_values,
+    obj_scale_GLS, obj_scale_PDE, 
+    N, V, Δx, LHS, RHS, initialCondition, finalTime, alg, δt,
+    meshPoints, SSEArray, 
+    Du, Ru, D′u, TuP, DuP, RuP, D′uP, RuN,
+    inIdx, unscaled_t̃, tt, d, r, 
+    errs, MSE, optim_setup,
+    iterate_idx, closest_idx, nodes, weights, show_losses, σₙ,
+    PDEkwargs...)
+    @assert length(obj_values) == size(stacked_params, 2) "The number of objective values must equal the provided number of initial parameter estimate restarts."
+
+    # Define the objective function
+    maxf = maximum(f[inIdx])
+    optim_fnc = αβγ -> loss_function(αβγ; u,
+        f, fₓ, fₓₓ, fₜ,
+        N, V, Δx, LHS, RHS,
+        T, D, D′, R,
+        initialCondition, finalTime, alg, 
+        δt, SSEArray, Du, Ru, TuP, DuP, RuP, D′uP, RuN, 
+        inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE,
+        nodes, weights, maxf, D_params, R_params, T_params,
+        iterate_idx, closest_idx, show_losses, σₙ, PDEkwargs...)
+
+    # Define the optimisation function 
+    if constrained
+        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, lowers, uppers, αβγ₀, Fminbox(LBFGS()), optoptions; autodiff = :forward)
+    else
+        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, αβγ₀, LBFGS(), optoptions; autodiff = :forward)
+    end
+
+    # Optimise 
+    @inbounds for (j, params) in enumerate(eachcol(stacked_params))
+        try
+            prob = fit_fnc(params)
+            obj_values[j] = prob.minimum
+        catch err 
+            println(err)
+            obj_values[j] = Inf
+        end
+    end
+    min_obj_idx = findmin(obj_values)[2]
+    fit_model = fit_fnc(stacked_params[:, min_obj_idx])
+    final_params = fit_model.minimizer
+
+    # Allocate parameter values
+    α .= @views final_params[1:tt]
+    β .= @views final_params[(tt+1):(tt+d)]
+    γ .= @views final_params[(tt+d+1):(tt+d+r)]
+    return nothing
 end
