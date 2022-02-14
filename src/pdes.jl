@@ -48,6 +48,7 @@ Function for computing the system of ODEs used in a discretised delay-reaction-d
 The values are updated in-place into the vector `dudt` for the new value of `dudt` at time `t`.
 """
 function sysdegeneral!(dudt, u, p, t)
+    todo"Add back in the Jacobian."
     N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, DD, RR, T, D, R, tb, db, rb, D_params, R_params, T_params = p
     if typeof(DD) <: PreallocationTools.DiffCache # If we're doing automatic differentiation 
         DD = get_tmp(DD, D(u[1], db, D_params))
@@ -105,6 +106,16 @@ function compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp::BootResult
 end
 
 """
+    compute_initial_conditions(x_pde, t_pde, u_pde, bgp::BootResults)
+
+Method for calling [`compute_initial_conditions`] when providing only `bgp` and the data. 
+"""
+function compute_initial_conditions(x_pde, t_pde, u_pde, bgp::BootResults)
+    todo"Just make this the main function and remove the more complicated method."
+    return compute_initial_conditions(x_pde, t_pde, u_pde, bgp.pde_setup.ICType, bgp, length(bgp.pde_setup.meshPoints), bgp.bootstrap_setup.B, bgp.pde_setup.meshPoints)
+end
+
+"""
     compute_valid_pde_indices(u, num_t, num_u, B, tr, dr, rr)
 
 Computes the indices corresponding to the bootstrap samples which give valid PDE solutions. The check is done by 
@@ -144,4 +155,76 @@ function compute_valid_pde_indices(u_pde, num_t, num_u, B, tr, dr, rr, nodes, we
         end
     end
     return idx
+end
+
+"""
+    compute_valid_pde_indices(u_pde, num_t, num_u, nodes, weights, bgp::BootResults)
+
+Method for calling [`compute_valid_pde_indices`] when providing only `bgp` and the data. 
+"""
+function compute_valid_pde_indices(u_pde, num_t, num_u, nodes, weights, bgp::BootResults)
+    todo"Just make this the main function and remove the more complicated method."
+    return compute_valid_pde_indices(u_pde, num_t, num_u, bgp.bootstrap_setup.B, bgp.delayBases, bgp.diffusionBases, bgp.reactionBases, nodes, weights, bgp.D_params, bgp.R_params, bgp.T_params)
+end
+
+"""
+    boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.0)
+
+Solve the PDEs corresponding to the bootstrap iterates in `bgp` obtained from [`bootstrap_gp`](@ref). 
+
+# Arguments 
+- `bgp`: A [`BootResults`](@ref) struct containing the results from [`bootstrap_gp`](@ref).
+- `x_pde`: The spatial data to use for obtaining the initial condition.
+- `t_pde`: The temporal data to use for obtaining the initial condition.
+- `u_pde`: The density data to use for obtaining the initial condition.
+
+# Keyword Arguments 
+- `prop_samples = 1.0`: The proportion of bootstrap samples to compute teh corresponding PDE soluton to.
+
+# Note 
+The `_pde` subscript is used to indicate that these data need not be the same as the `(x, t, u)` used in [`bootstrap_gp`](@ref), for example.
+For example, we may have 3 replicates of some data which we would easily use in [`bootstrap_gp`](@ref), but for the PDE we would need to average these 
+together for obtaining the solutions.
+"""
+function boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.0)
+    todo"Do some further analysis to find the best ODE algorithm to use."
+    @assert 0 < prop_samples ≤ 1.0 "The values of prop_samples must be in (0, 1]."
+    nodes, weights = gausslegendre(5)
+    # Compute number of bootstrap replicates 
+    tr = bgp.delayBases
+    dr = bgp.diffusionBases
+    rr = bgp.reactionBases
+    B = size(dr, 2)
+
+    # Setup PDE
+    rand_pde = convert(Int64, trunc(prop_samples * B))
+    N = length(bgp.pde_setup.meshPoints)
+    M = length(bgp.pde_setup.δt)
+    solns_all = zeros(N, rand_pde, M)
+
+    # Compute the initial conditions
+    initialCondition_all = compute_initial_conditions(x_pde, t_pde, u_pde, bgp)
+
+    # Find the valid indices
+    idx = compute_valid_pde_indices(u_pde, 500, 500, nodes, weights, bgp)
+
+    # Solve PDEs
+    initialCondition = zeros(N, 1) # Setup cache array
+    finalTime = maximum(bgp.pde_setup.δt)
+    sample_idx = StatsBase.sample(idx, rand_pde)
+    Du = zeros(N, 1)
+    Ru = zeros(N, 1)
+    Δx = diff(bgp.pde_setup.meshPoints)
+    V = @views 1 / 2 * [Δx[1]; Δx[1:(N-2)] + Δx[2:(N-1)]; Δx[N-1]]
+    tspan = (0.0, finalTime)
+    @views @muladd @inbounds for (pdeidx, coeff) in collect(enumerate(sample_idx)) # Don't need collect here, but it was useful previously when dealing with threading (before we removed threading). Just keeping it as a reminder.
+        initialCondition .= initialCondition_all[:, coeff]
+        p = (N, V, Δx, bgp.pde_setup.LHS..., bgp.pde_setup.RHS..., Du, Ru, bgp.T, bgp.D, bgp.R, tr[:, coeff], dr[:, coeff], rr[:, coeff], bgp.D_params, bgp.R_params, bgp.T_params)
+        prob = ODEProblem(sysdegeneral!, initialCondition, tspan, p)
+        solns_all[:, pdeidx, :] .= hcat(DifferentialEquations.solve(prob, alg = bgp.pde_setup.alg, saveat = bgp.pde_setup.δt).u...)
+        print("Solving PDEs: Step $pdeidx of $rand_pde.\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
+    end
+
+    # Return
+    return solns_all
 end
