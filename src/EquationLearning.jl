@@ -6,6 +6,8 @@ todo"Use RecipesBase.jl to define plotting methods."
 todo"Parallelise most of the computations to significantly improve the runtime."
 todo"Add Bayes PDE-Find from Martina-Perez et al. (2021)."
 todo"Add the biologically informed neural networks from Lagergren et al. (2020)."
+todo"Add some detailed unit tests."
+todo"Remove unnecessary dependencies and work on precompilation time."
 
 #####################################################################
 ## Required packages
