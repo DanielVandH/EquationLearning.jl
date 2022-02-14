@@ -31,13 +31,13 @@ using Sundials
 ## Load files 
 #####################################################################
 
+include("structs.jl")           # Definining certain structures
 include("gps.jl")               # Fitting Gaussian processes 
 include("pdes.jl")              # Working with PDEs 
 include("recipes.jl")           # Utility functions for working with plots
 include("bootstrapping.jl")     # Bootstrapping functions 
 include("optimisation.jl")      # Functions for optimising parameters 
 include("utils.jl")             # Extra utility functions 
-include("structs.jl")           # Definining certain structures
 include("error_checking.jl")    # Helper functions for making assertions in functions 
 include("plot_results.jl")      # Functions for plotting results from bootstrapping 
 include("synthetic_data.jl")    # Function for generating synthetic data 
