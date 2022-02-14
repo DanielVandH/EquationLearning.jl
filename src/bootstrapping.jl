@@ -338,7 +338,8 @@ function bootstrap_gp(x::T1, t::T1, u::T2,
             Du, Ru, D′u, TuP, DuP, RuP, D′uP, RuN,
             inIdx, unscaled_t̃, tt, d, r,
             errs, MSE, optim_setup,
-            iterate_idx, closest_idx, nodes, weights, show_losses, σₙ)
+            iterate_idx, closest_idx, nodes, weights, show_losses, σₙ,
+            PDEkwargs...)
 
         print("Bootstrapping: Step $j of $B. Previous objective value: $(minimum(obj_values)).\u001b[1000D")
     end
