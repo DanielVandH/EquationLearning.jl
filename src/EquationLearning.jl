@@ -38,7 +38,6 @@ include("recipes.jl")           # Utility functions for working with plots
 include("bootstrapping.jl")     # Bootstrapping functions 
 include("optimisation.jl")      # Functions for optimising parameters 
 include("utils.jl")             # Extra utility functions 
-include("error_checking.jl")    # Helper functions for making assertions in functions 
 include("plot_results.jl")      # Functions for plotting results from bootstrapping 
 include("synthetic_data.jl")    # Function for generating synthetic data 
 
