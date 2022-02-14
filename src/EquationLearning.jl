@@ -25,6 +25,7 @@ using Random
 using StatsBase 
 using StatsPlots    
 using Sundials
+# using RecipesBase
 
 #####################################################################
 ## Load files 
@@ -37,6 +38,8 @@ include("bootstrapping.jl")
 include("optimisation.jl")
 include("utils.jl")
 include("structs.jl")
+include("error_checking.jl")
+include("plot_results.jl")
 
 #####################################################################
 ## Export functions
