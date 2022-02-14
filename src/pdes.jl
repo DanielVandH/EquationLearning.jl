@@ -173,13 +173,16 @@ end
 Solve the PDEs corresponding to the bootstrap iterates in `bgp` obtained from [`bootstrap_gp`](@ref). 
 
 # Arguments 
-- `bgp`: A [`BootResults`](@ref) struct containing the results from [`bootstrap_gp`](@ref).
+- `bgp::BootResults`: A [`BootResults`](@ref) struct containing the results from [`bootstrap_gp`](@ref).
 - `x_pde`: The spatial data to use for obtaining the initial condition.
 - `t_pde`: The temporal data to use for obtaining the initial condition.
 - `u_pde`: The density data to use for obtaining the initial condition.
 
 # Keyword Arguments 
 - `prop_samples = 1.0`: The proportion of bootstrap samples to compute teh corresponding PDE soluton to.
+
+# Outputs 
+- `solns_all`: The solutions to the PDEs over the mesh points at each time value.
 
 # Note 
 The `_pde` subscript is used to indicate that these data need not be the same as the `(x, t, u)` used in [`bootstrap_gp`](@ref), for example.
