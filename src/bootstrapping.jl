@@ -255,6 +255,7 @@ function bootstrap_gp(x::T1, t::T1, u::T2,
     D_params = nothing, R_params = nothing, T_params = nothing, PDEkwargs...) where {T1<:AbstractVector,T2<:Function}
     ## Check provided functions and ODE algorithm are correct
     @assert !(typeof(PDE_Setup.alg) <: Sundials.SundialsODEAlgorithm) "Automatic differentiation is not compatible with Sundials solvers."
+    @assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
     try
         D(u[1], β₀, D_params)
     catch
