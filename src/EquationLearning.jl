@@ -4,27 +4,27 @@ module EquationLearning
 ## Required packages
 #####################################################################
 
-using GaussianProcesses
-using Optim
-using MuladdMacro
-using LSODA
-using Dierckx
-using LaTeXStrings
-using DifferentialEquations
+using DataFrames 
+using Dierckx 
+using DifferentialEquations 
+using FastGaussQuadrature 
+using ForwardDiff 
+using GaussianProcesses 
+using LSODA 
+using LaTeXStrings 
+using LatinHypercubeSampling 
+using LinearAlgebra 
+using Measures 
+using MuladdMacro 
+using ODEInterfaceDiffEq 
+using Optim 
+using Plots 
+using PreallocationTools 
+using Printf 
+using Random 
+using StatsBase 
+using StatsPlots    
 using Sundials
-using FastGaussQuadrature
-using ODEInterfaceDiffEq
-using Plots
-using PreallocationTools
-using Printf
-using Random
-using LinearAlgebra
-using ForwardDiff
-using StatsPlots
-using Measures
-using LatinHypercubeSampling
-using StatsBase
-using DataFrames
 
 #####################################################################
 ## Load files 
