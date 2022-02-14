@@ -61,11 +61,12 @@ struct BootResults
     μ::Vector{Float64}
     L::LowerTriangular{Float64}
     gp_setup::GP_Setup
-    bootstrap_setup::Bootstrap_Setup
+    bootstrap_setup::Bootstrap_Setup 
+    pde_setup::PDE_Setup
 end
 
 """
-    struct GP_Setup{T}
+    mutable struct GP_Setup{T}
 
 Setup for the Gaussian processes. See also [`fit_GP`](@ref) and [`bootstrap_gp`](@ref).
 
@@ -75,21 +76,21 @@ Setup for the Gaussian processes. See also [`fit_GP`](@ref) and [`bootstrap_gp`]
 - `σ::Vector{T}`: A 2-vector giving the lower and upper bounds for the initial estimates of `σ` (defined on a log scale).
 - `σₙ::Vector{T}`: A 2-vector giving the lower and upper bounds for the initial estimates of `σₙ` (defined on a log scale).
 - `GP_Restarts::Int`: Number of times to restart the optimiser. See [`opt_restart!`](@ref).
-- `μ::Union{Nothing, Vector{T}}`: Either `Nothing` or a stored mean vector for the Gaussian process. 
-- `L::Union{Nothing, LowerTriangular{T}}`: Either `Nothing` or a stored Cholesky factor for the Gaussian process.
+- `μ::Union{Missing, Vector{T}}`: Either `Nothing` or a stored mean vector for the Gaussian process. 
+- `L::Union{Missing, LowerTriangular{T}}`: Either `Nothing` or a stored Cholesky factor for the Gaussian process.
 - `nugget::T`: A term to add to the correlation matrix to force the covariance matrix to be symmetric positive definite.
-- `gp::Union{Nothing, GPBase}`: Either `Nothing` or a stored Gaussian process. See also [`fit_GP`](@ref).
+- `gp::Union{Missing, GPBase}`: Either `Nothing` or a stored Gaussian process. See also [`fit_GP`](@ref).
 """
-struct GP_Setup{T}
+mutable struct GP_Setup{T} # We use mutable so that we can update it with the found μ, L, gp if we want
     ℓₓ::Vector{T}
     ℓₜ::Vector{T}
     σ::Vector{T}
     σₙ::Vector{T}
     GP_Restarts::Int
-    μ::Union{Nothing,Vector{T}}
-    L::Union{Nothing,LowerTriangular{T}}
+    μ::Union{Missing,Vector{T}}
+    L::Union{Missing,LowerTriangular{T}}
     nugget::T
-    gp::Union{Nothing,GPBase}
+    gp::Union{Missing,GPBase}
 end
 
 """
@@ -103,10 +104,10 @@ A constructor for [`GP_Setup`](@ref) for some density data `u`.
 - `σ = log.([1e-1, 2std(u)])`.
 - `σₙ = log.([1e-5, 2std(u)])`.
 - `GP_Restarts = 50`.
-- `μ = nothing`.
-- `L = nothing`.
+- `μ = missing`.
+- `L = missing`.
 - `nugget = 1e-4`.
-- `gp = nothing`.
+- `gp = missing`.
 """
 function GP_Setup(u;
     ℓₓ = log.([1e-4, 1.0]),
@@ -114,10 +115,10 @@ function GP_Setup(u;
     σ = log.([1e-1, 2std(u)]),
     σₙ = log.([1e-5, 2std(u)]),
     GP_Restarts = 50,
-    μ = nothing,
-    L = nothing,
+    μ = missing,
+    L = missing,
     nugget = 1e-4,
-    gp = nothing)
+    gp = missing)
     return GP_Setup(promote(ℓₓ, ℓₜ, σ, σₙ)..., Int(GP_Restarts), μ, L, convert(eltype(ℓₓ), nugget), gp)
 end
 
@@ -142,7 +143,7 @@ struct Bootstrap_Setup
     constrained::Bool
     obj_scale_GLS::Float64
     obj_scale_PDE::Float64
-    show_losses::Bool 
+    show_losses::Bool
 end
 
 """
@@ -198,7 +199,7 @@ struct PDE_Setup
     LHS::Vector{Float64}
     RHS::Vector{Float64}
     finalTime::Float64
-    δt::Union{AbstractVector,Float64}
+    δt::AbstractVector
     alg
 end
 
@@ -220,8 +221,14 @@ function PDE_Setup(x, t;
     LHS = [0.0, 1.0, 0.0],
     RHS = [0.0, -1.0, 0.0],
     finalTime = maximum(t),
-    δt = finalTime / 4.0, 
+    δt = finalTime / 4.0,
     alg = nothing)
     @assert length(LHS) == length(RHS) == 3 "The provided boundary condition vectors LHS and RHS must be of length 3."
+    if δt isa Number
+        δt = 0:δt:finalTime
+        if length(δt) ≠ length(unique(t)) 
+            error("Length of δt must be the same as the number of unique time points in t.")
+        end
+    end
     return PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg)
 end
