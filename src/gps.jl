@@ -155,14 +155,14 @@ end
 end
 
 """
-    compute_joint_GP(gp, X̃; nugget = 1e-10)
+    compute_joint_GP(gp::GPBase, X̃; nugget = 1e-10)
 
 Computes the mean vector `μ` and Cholesky factor `L` such that `LLᵀ = Σ`, where 
 
 `` \\left[\\begin{array}{c} \\mathbf{f} \\\\ \\frac{\\partial\\mathbf f}{\\partial t} \\\\ \\frac{\\partial\\mathbf f}{\\partial x} \\\\\\frac{\\partial^2\\mathbf f}{\\partial x^2}\\end{array}\\right] \\sim \\mathcal N\\left(\\mathbf{\\mu}, \\mathbf{\\Sigma}\\right).``
 
 # Arguments 
-- `gp`: The fitted Gaussian process. 
+- `gp::GPBase`: The fitted Gaussian process. 
 - `X̃`: Test data for the Gaussian process. 
 
 # Keyword Arguments 
@@ -210,7 +210,9 @@ julia> ccall((:openblas_get_num_threads64_, Base.libblas_name), Cint, ()) # In c
 julia> LinearAlgebra.BLAS.set_num_threads(1)
 ```
 """
-function compute_joint_GP(gp, X̃; nugget = 1e-10)
+function compute_joint_GP(gp::GPBase, X̃; nugget = 1e-10)
+    @assert size(X̃, 1) == 2 "The test matrix must have two rows only."
+    
     # Extract the original data matrix 
     X = gp.x
     nₓnₜ = size(X̃, 2)
