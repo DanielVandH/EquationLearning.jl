@@ -3,6 +3,9 @@ uuid = "bff85f54-4e10-4475-8cea-b2bdf0d9c3a9"
 authors = ["DanielVandH <danj.vandenheuvel@gmail.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+GaussianProcesses = "891a1506-143c-57d2-908e-e1f8e92e6de9"
+
 [compat]
 julia = "1"
 
