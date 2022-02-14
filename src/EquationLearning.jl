@@ -31,15 +31,16 @@ using Sundials
 ## Load files 
 #####################################################################
 
-include("gps.jl")
-include("pdes.jl")
-include("recipes.jl")
-include("bootstrapping.jl")
-include("optimisation.jl")
-include("utils.jl")
-include("structs.jl")
-include("error_checking.jl")
-include("plot_results.jl")
+include("gps.jl")               # Fitting Gaussian processes 
+include("pdes.jl")              # Working with PDEs 
+include("recipes.jl")           # Utility functions for working with plots
+include("bootstrapping.jl")     # Bootstrapping functions 
+include("optimisation.jl")      # Functions for optimising parameters 
+include("utils.jl")             # Extra utility functions 
+include("structs.jl")           # Definining certain structures
+include("error_checking.jl")    # Helper functions for making assertions in functions 
+include("plot_results.jl")      # Functions for plotting results from bootstrapping 
+include("synthetic_data.jl")    # Function for generating synthetic data 
 
 #####################################################################
 ## Export functions
