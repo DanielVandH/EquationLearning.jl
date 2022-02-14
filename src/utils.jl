@@ -1,3 +1,17 @@
+#####################################################################
+## Script description: utils.jl 
+##
+## This script contains certain functions to help with other computations.
+##
+## The following functions are defined:
+##  - scale_unit: Scales data to be in a unit interval.
+##  - searchsortednearest: Given a sorted array and a point, find the
+##      closest element in the array to the point.
+##  - data_thresholder: Gives indices corresponding to reliable data 
+##      points.
+##
+#####################################################################
+
 """ 
     scale_unit(x)
 
