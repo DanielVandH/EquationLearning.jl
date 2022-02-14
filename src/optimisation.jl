@@ -94,7 +94,7 @@ function loss_function(αβγ; u,
             SSEArray = get_tmp(SSEArray, first(αβγ))
             MSE = get_tmp(MSE, first(αβγ))
             p = (N, V, Δx, LHS..., RHS..., Du, Ru, T, D, R, α, β, γ, D_params, R_params, T_params)
-            prob = ODEProblem(sysdegeneral2!, convert.(eltype(αβγ), initialCondition), (0.0, finalTime), p)
+            prob = ODEProblem(sysdegeneral!, convert.(eltype(αβγ), initialCondition), (0.0, finalTime), p)
             SSEArray .= hcat(DifferentialEquations.solve(prob, EQLalg, saveat = δt; PDEkwargs...).u...)
             for j = 1:length(δt)
                 for (k, i) in enumerate(iterate_idx[j])
