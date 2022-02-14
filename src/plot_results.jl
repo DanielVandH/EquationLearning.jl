@@ -147,3 +147,48 @@ function curve_results(bgp::BootResults; level = 0.05, fontsize = 13, plot_kwarg
     # Return 
     return delayCurvePlots, diffusionCurvePlots, reactionCurvePlots
 end
+
+"""
+    pde_results(x_pde, t_pde u_pde, solns_all, bgp::BootResults; <keyword arguments>)
+
+Plots the solutions to the PDEs corresponding to the bootstrap samples of [`bootstrap_gp`](@ref) using 
+the computed solutins in [`boot_pde_solve`](@ref).
+
+# Arguments
+- `x_pde`: The spatial data to use for obtaining the initial condition.
+- `t_pde`: The temporal data to use for obtaining the initial condition.
+- `u_pde`: The density data to use for obtaining the initial condition.
+- `bgp::BootResults`: A [`BootResults`](@ref) struct containing the results from [`bootstrap_gp`](@ref).
+
+# Keyword Arguments 
+- `colors = [:black, :blue, :red, :magenta, :green]`: A list of colors for colouring the solutions at each time.
+- `level = 0.05`: The significance level for computing the credible intervals for the parameter values. 
+- `fontsize = 13`: Font size for the plots (to be used in [`plot_aes!`](@ref)).
+- `plot_kwargs...`: Other keyword arguments to be used in `plot`.
+
+# Outputs 
+- `pdeSolutionPlots_BGP`: The plot of the PDE solutions.
+"""
+function pde_results(x_pde, t_pde, u_pde, solns_all, bgp::BootResults;
+    colors = [:black, :blue, :red, :magenta, :green], level = 0.05, fontsize = 13, plot_kwargs...)
+    N = length(bgp.pde_setup.meshPoints)
+    M = length(bgp.pde_setup.δt)
+    @assert length(colors) == M "There must be as many provided colors as there are unique time values."
+    soln_vals_mean = zeros(N, M)
+    soln_vals_lower = zeros(N, M)
+    soln_vals_upper = zeros(N, M)
+    for j = 1:M
+        soln_vals_mean[:, j], soln_vals_lower[:, j], soln_vals_upper[:, j] = compute_ribbon_features(solns_all[:, :, j]; level = level)
+    end
+    @views pdeSolutionPlots_BGP = plot(bgp.pde_setup.meshPoints, soln_vals_mean[:, 1], label = bgp.pde_setup.δt[1], xlabel = L"x", ylabel = L"u(x, t)", linecolor = colors[1], legend = :top, plot_kwargs...)
+    @views plot!(pdeSolutionPlots_BGP, bgp.pde_setup.meshPoints, soln_vals_lower[:, 1], fillrange = soln_vals_upper[:, 1], fillalpha = 0.35, label = false, color = colors[1])
+    @views for j = 2:M
+        plot!(pdeSolutionPlots_BGP, bgp.pde_setup.meshPoints, soln_vals_mean[:, j], label = bgp.pde_setup.δt[j], linecolor = colors[j])
+        plot!(pdeSolutionPlots_BGP, bgp.pde_setup.meshPoints, soln_vals_lower[:, j], fillrange = soln_vals_upper[:, j], fillalpha = 0.35, label = false, color = colors[j])
+    end
+    @views for j = 1:M
+        plot!(pdeSolutionPlots_BGP, x_pde[t_pde.==bgp.pde_setup.δt[j]], u_pde[t_pde.==bgp.pde_setup.δt[j]], color = colors[j], seriestype = :scatter, label = false)
+    end
+    plot_aes!(pdeSolutionPlots_BGP, fontsize)
+    return pdeSolutionPlots_BGP
+end
