@@ -1,5 +1,5 @@
 #####################################################################
-## File description: gps.jl 
+## Script description: gps.jl 
 ##
 ## This script contains certain functions used for fitting Gaussian 
 ## processes, primarily  leveraging the functions provided by 
@@ -18,20 +18,31 @@
 #####################################################################
 
 """
-    opt_restart!(gp::GPBase; <keyword arguments>)
+    opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts = 50)
 
-Given a Gaussian process `gp::GPBase`, fit many new Gaussian processes with new initial estimates for the hyperparameters. The 
+Given a Gaussian process `gp`, fit many new Gaussian processes with new initial estimates for the hyperparameters. The 
 initial estimates are chosen based on provided ranges for the hyperparameters and Latin hypercube sampling. See also [`fit_GP`](@ref).
 
 # Arguments 
-- 
+- `gp`: A Gaussian process object, fitted uses the `GaussianProcesses.jl` package. 
+- `ℓₓ`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₓ` (defined on a log scale).
+- `ℓₜ`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₜ` (defined on a log scale).
+- `σ`: A 2-vector giving the lower and upper bounds for the initial estimates of `σ` (defined on a log scale).
+- `σₙ`: A 2-vector giving the lower and upper bounds for the initial estimates of `σₙ` (defined on a log scale).
+
+# Keyword Arguments 
+- `num_restarts = 50`: The number of restarts to perform.
 """
-function opt_restart!(gp::GPBase; num_restarts::Int64 = 50, ℓₓ::Vector{Float64}, ℓₜ::Vector{Float64}, σ::Vector{Float64}, σₙ::Vector{Float64})
+function opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts = 50)
     @assert length(ℓₓ) == length(ℓₜ) == length(σ) == length(σₙ) == 2 "The provided hyperparameters must be given as vectors of length 2 providing upper and lower bounds."
+    @assert issorted(ℓₓ) && issorted(ℓₜ) && issorted(σ) && issorted(σₙ) "The provided ranges for the hyperparameters must be given as (lower, upper)."
+
     ## Form the design 
     plan, _ = LHCoptim(num_restarts, length(GaussianProcesses.get_params(gp)), 1000)
+
     # Scale the design into the provided intervals 
-    new_params = scaleLHC(plan, [(ℓₓ[1], ℓₓ[2]), (ℓₜ[1], ℓₜ[2]), (σ[1], σ[2]), (σₙ[1], σₙ[2])])'
+    new_params = scaleLHC(plan, [(ℓₓ[1], ℓₓ[2]), (ℓₜ[1], ℓₜ[2]), (σ[1], σ[2]), (σₙ[1], σₙ[2])])' # Transpose to get a more efficient order for accessing in a loop
+
     # Optimise
     obj_values = zeros(num_restarts)
     for j = 1:num_restarts
@@ -62,42 +73,40 @@ Fits a Gaussian process with data `(x, t)` using the targets in `u`.
 - `u`: The targets corresponding to `(x, t)`.
 
 # Keyword Arguments 
-- `ℓₓ = -2.0`: The initial estimate of the spatial length scale, given on a log scale. 
-- `ℓₜ = -0.4`: The initial estimate of the temporal length scale, given on a log scale.
-- `σ = 7.0`: The initial estimate of the signal standard deviation, given on a log scale.
-- `σₙ = 2.0`: The initial estimate of the standard deviation of the observation noise, given on a log noise.
+- `ℓₓ = log.([1e-4, 1.0])`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₓ` (defined on a log scale).
+- `ℓₜ = log.([1e-4, 1.0])`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₜ` (defined on a log scale).
+- `σ = log.([1e-1, 2std(u)])`: A 2-vector giving the lower and upper bounds for the initial estimates of `σ` (defined on a log scale).
+- `σₙ = log.([1e-5, 2std(u)])`: A 2-vector giving the lower and upper bounds for the initial estimates of `σₙ` (defined on a log scale).
 - `num_restarts = 50`: Number of times to restart the optimiser. See [`Optimise_Restart!`](@ref).
 
 # Outputs 
 - `gp`: The fitted Gaussian process.
-
-# Extended help
-In this function we scale the data to be in [0, 1] to allow for the optimisation scheme to converge with 
-greater stability. The scaling used is `x ↤ (x - minimum(x))/(maximum(x) - minimum(x))` and similarly for `t`.
 """
-function fit_GP(x, t, u; ℓₓ = log.([1e-4, 1.0]), ℓₜ = log.([1e-4, 1.0]), σ = log.([1e-1, 2std(u)]), σₙ = log.([1e-5, 2std(u)]), num_restarts = 50)
+function fit_GP(x, t, u; ℓₓ = log.([1e-4, 1.0]), ℓₜ = log.([1e-4, 1.0]),
+    σ = log.([1e-1, 2std(u)]), σₙ = log.([1e-5, 2std(u)]), num_restarts = 50)
+    @assert length(x) == length(t) == length(u) "The provided data (x, t, u) must all be the same length."
+
     # Define the GP 
     meanFunc = MeanZero()
-    covFunc = SE([mean(exp.(ℓₓ)), mean(exp.(ℓₜ))], mean(exp.(σ)))
-    # Check that the data are row vectors and that the target is a column vector
+    covFunc = SE([0.0, 0.0], 0.0) # These numbers don't matter, they get replaced later by opt_restart
+
+    # Ensure that the data are row vectors and that the target is a column vector
     x = Matrix(vec(x)')
     t = Matrix(vec(t)')
     u = vec(u)
+
     # Now normalise the data 
-    x_min = minimum(x)
-    x_max = maximum(x)
-    t_min = minimum(t)
-    t_max = maximum(t)
-    xx = @. (x - x_min) / (x_max - x_min)
-    tt = @. (t - t_min) / (t_max - t_min)
+    xx = scale_unit(x)
+    tt = scale_unit(t)
     X = [xx; tt]
+
     # Now fit the GP
-    gp = GPE(X, u, meanFunc, covFunc, mean(exp.(σₙ)))
+    gp = GPE(X, u, meanFunc, covFunc, -2.0)
+
     ## Obtain num_restarts random estimates for the hyperparameters
-    opt_restart!(gp; num_restarts = num_restarts, ℓₓ, ℓₜ, σ, σₙ)
+    opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts = num_restarts)
     return gp
 end
-
 
 @doc "See [`compute_joint_GP`](@ref) for details." @inline function dkxⱼ(x₁, t₁, x₂, t₂, ℓ₁, ℓ₂)
     (x₁ - x₂) / ℓ₁^2
@@ -154,19 +163,18 @@ Computes the mean vector `μ` and Cholesky factor `L` such that `LLᵀ = Σ`, wh
 
 # Arguments 
 - `gp`: The fitted Gaussian process. 
-- `Xₛ`: Test data for the Gaussian process. 
+- `X̃`: Test data for the Gaussian process. 
 
 # Keyword Arguments 
-- `nugget = 1e-10`: The term to add to the diagonals of the covariance matrix incase the matrix is not positive definite.
+- `nugget = 1e-10`: The term to add to the diagonals of the covariance matrix in case the matrix is not positive definite.
 
 # Outputs 
 - `μ`: The mean vector. 
 - `L`: The Cholesky factor of the covariance matrix.
 
 # Extended help
-The covariance matrices are built without any attention to symmetry. This is done for readability purposes
-(the direction of this benefit being debatable...). The loops could be optimised by e.g. considering only the 
-upper triangular components. 
+The covariance matrices are built without any attention to symmetry. The loops could be optimised by 
+e.g. considering only the upper triangular components. 
 
 The covariance matrices are built using separate functions for the derivatives of the kernel function (currently 
 only implemented for the squared exponential kernel). These functions are:
@@ -188,10 +196,10 @@ only implemented for the squared exponential kernel). These functions are:
 - [`d⁴kxᵢ²xⱼ²(x₁, t₁, x₂, t₂, ℓ₁, ℓ₂)`](@ref).
 
 In these functions, the derivatives are evaluated at `([x₁; t₁], [x₂; t₂])` with length scales 
-`(ℓ₁, ℓ₂)` for space and time, resectively. The functions are missing a multiplication by the 
-kernel value `cov(gp.kernel, [x₁; t₁], [x₂; t₂])` to allow or it to be done in place more easily. 
-Note also that in some of these functions, powers are written as producs, e.g. `x³ = x*x*x`, to allow 
-for the `@muladd` macro to work. See https://github.com/SciML/MuladdMacro.jl. Since the functions are 
+`(ℓ₁, ℓ₂)` for space and time, respectively. The functions are missing a multiplication by the 
+kernel value `cov(gp.kernel, [x₁; t₁], [x₂; t₂])` to allow for it to be done in place more easily. 
+Note also that in some of these functions, powers are written as products, e.g. `x³ = x*x*x`, to allow 
+for the `@muladd` macro to work (see https://github.com/SciML/MuladdMacro.jl). Since the functions are 
 quite small, we use `@inline` on each function to encourage the compiler to inline the function 
 in the LLVM.
 
@@ -302,6 +310,7 @@ function compute_joint_GP(gp, X̃; nugget = 1e-10)
         Σ, chol = GaussianProcesses.make_posdef!(Σ; nugget = nugget)
         L = chol.L
     end
+
     # Return 
     return μ, L
 end
@@ -321,10 +330,6 @@ covariance matrix `Σ = LLᵀ` corresponding to `z ∼ N(0, I)`.
 
 # Outputs 
 The random sample is updated in-place into `F`.
-
-# Extended help
-The function draws a random sample by noting that if `X ∼ N(μ, Σ)`, then 
-`X ∼ μ + Lz`, where `z ∼ N(0, I)` and `LLᵀ = Σ`.
 """
 @inline function draw_gp!(F, μ, L, z, ℓz)
     F .= μ + mul!(ℓz, LowerTriangular(L), z)
