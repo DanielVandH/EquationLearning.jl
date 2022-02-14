@@ -49,7 +49,7 @@ The values are updated in-place into the vector `dudt` for the new value of `dud
 """
 function sysdegeneral!(dudt, u, p, t)
     N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, DD, RR, T, D, R, tb, db, rb, D_params, R_params, T_params = p
-    if typeof(D) <: PreallocationTools.DiffCache # If we're doing automatic differentiation 
+    if typeof(DD) <: PreallocationTools.DiffCache # If we're doing automatic differentiation 
         DD = get_tmp(DD, D(u[1], db, D_params))
         RR = get_tmp(RR, R(u[1], tb, D_params))
     end
