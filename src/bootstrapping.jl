@@ -230,8 +230,8 @@ Perform bootstrapping on the data `(x, t, u)` to learn the appropriate functiona
 - `α₀::T1`: Initial estimates of the delay parameters. Not actually used for anything other than ensuring the functions are specified correctly.
 - `β₀::T1`: Initial estimates of the diffusion parameters. Not actually used for anything other than ensuring the functions are specified correctly. 
 - `γ₀::T1`: Initial estimates of the reaction parameters. Not actually used for anything other than ensuring the functions are specified correctly. 
-- `lowers::T1`: Lower bounds to use for constructing the Latin hypersquare design, and for the constrained problem if `bootstrap_setup.constrained = true`.
-- `uppers::T1`: Upper bounds to use for constructing the Latin hypersquare design, and for the constrained problem if `bootstrap_setup.constrained = true`.
+- `lowers::T1`: Lower bounds to use for constructing the Latin hypersquare design, and for the constrained problem if `constrained = true` in `bootstrap_setup`.
+- `uppers::T1`: Upper bounds to use for constructing the Latin hypersquare design, and for the constrained problem if `constrained = true` in `bootstrap_setup`.
 
 # Keyword Arguments 
 - `gp_setup::GP_Setup = GP_Setup(u)`: Defines the setup for the Gaussian process. See also [`GP_Setup`](@ref).
