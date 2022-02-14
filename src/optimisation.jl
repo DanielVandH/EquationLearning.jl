@@ -39,16 +39,15 @@ Computes the loss function for the nonlinear least squares problem at `αβγ`.
 - `d`: The number of diffusion parameters.
 - `r`: The number of reaction parameters.
 - `errs`: Cache array for storing the individual error values.
-- `loss`: Which loss function(s) to use. Currently only implemented for `loss = ["GLS"]`, `loss = ["PDE"]`, or `loss = ["GLS"; "PDE"]`.
 - `MSE`: Cache array for storing the individual squared errors.
 - `obj_scale_GLS`: Scale to divide the `GLS` loss by.
 - `obj_scale_PDE`: Scale to divide the `PDE` loss by.
 - `nodes`: Gauss-Legendre quadrature nodes.
 - `weights`: Gauss-Legendre quadrature weights.
 - `maxf`: The maximum value of `f`.
-- `D_params`: Parameters for the diffusion function.
-- `R_params`: Parameters for the reaction function. 
-- `T_params`: Parameters for the delay function.
+- `D_params`: Extra parameters for the diffusion function.
+- `R_params`: Extra parameters for the reaction function. 
+- `T_params`: Extra parameters for the delay function.
 - `iterate_idx`: Vector used for indexing the values in `u` corresponding to different times.
 - `closest_idx`: Vector used for indexing the points in the PDE's meshpoints that are closet to the actual spatial data used for fitting the Gaussian process.
 - `σₙ`: The standard deviation of the observation noise of the Gaussian process.
