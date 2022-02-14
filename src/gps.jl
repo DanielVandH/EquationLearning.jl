@@ -77,7 +77,8 @@ Fits a Gaussian process with data `(x, t)` using the targets in `u`.
 - `ℓₜ = log.([1e-4, 1.0])`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₜ` (defined on a log scale).
 - `σ = log.([1e-1, 2std(u)])`: A 2-vector giving the lower and upper bounds for the initial estimates of `σ` (defined on a log scale).
 - `σₙ = log.([1e-5, 2std(u)])`: A 2-vector giving the lower and upper bounds for the initial estimates of `σₙ` (defined on a log scale).
-- `num_restarts = 50`: Number of times to restart the optimiser. See [`Optimise_Restart!`](@ref).
+- `num_restarts = 50`: Number of times to restart the optimiser. See [`opt_restart!`](@ref).
+
 
 # Outputs 
 - `gp`: The fitted Gaussian process.
@@ -106,6 +107,15 @@ function fit_GP(x, t, u; ℓₓ = log.([1e-4, 1.0]), ℓₜ = log.([1e-4, 1.0]),
     ## Obtain num_restarts random estimates for the hyperparameters
     opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts = num_restarts)
     return gp
+end
+
+""" 
+    fit_GP(x, t, u, setup::GP_Setup)
+
+Method for calling [`fit_GP`](@ref) with a setup defined by [`GP_Setup`](@ref).
+"""
+function fit_GP(x, t, u, setup::GP_Setup)
+    return fit_GP(x, t, u; ℓₓ = setup.ℓₓ, ℓₜ = setup.ℓₜ, σ = setup.σ, σₙ = setup.σₙ, num_restarts = setup.GP_Restarts)
 end
 
 @doc "See [`compute_joint_GP`](@ref) for details." @inline function dkxⱼ(x₁, t₁, x₂, t₂, ℓ₁, ℓ₂)
@@ -212,7 +222,7 @@ julia> LinearAlgebra.BLAS.set_num_threads(1)
 """
 function compute_joint_GP(gp::GPBase, X̃; nugget = 1e-10)
     @assert size(X̃, 1) == 2 "The test matrix must have two rows only."
-    
+
     # Extract the original data matrix 
     X = gp.x
     nₓnₜ = size(X̃, 2)
