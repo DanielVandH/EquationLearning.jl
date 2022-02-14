@@ -10,7 +10,10 @@
 ##  - BootResults: A struct for storing bootstrapping results.
 ##  - GP_Setup: A struct that defines the setup for a Gaussian process. 
 ##      A constructor is also defined.
-##  - 
+##  - Bootstrap_Setup: A struct for defining the setup for bootstrapping.
+##      A constructor is also defined.
+##  - PDE_Setuo: A struct for defining the configuration used for PDEs.
+##      A constructor is also defined.
 #####################################################################
 
 """
