@@ -148,6 +148,7 @@ A struct defining some arguments for the PDEs in [`bootstrap_gp`](@ref) and [`bo
 - `finalTime::Float64`: The final time to solve the PDE up to.
 - `δt::Union{AbstractVector, Float64}`: A number or a vector specifying the spacing between returned times for the solutions to the PDEs or specific times, respectively.
 - `alg`: Algorithm to use for solving the PDEs. If you want to let `DifferentialEquations.jl` select the algorithm automatically, specify `alg = nothing`. If automatic differentiation is being used in the ODE algorithm, then no `Sundials` algorithms can be used.
+- `ICType`: Type of initial condition to use. If `ICType == "data"` then a spline is put through the data for the initial condition. If `ICType = "gp"`, then the initial condition is given by a sample of a Gaussian process.
 """
 struct PDE_Setup
     meshPoints::AbstractVector
@@ -156,6 +157,7 @@ struct PDE_Setup
     finalTime::Float64
     δt::AbstractVector
     alg
+    ICType::String
 end
 
 """
@@ -170,6 +172,7 @@ A constructor for [`PDE_Setup`](@ref) for some spatial data `x` and temporal dat
 - `finalTime = maximum(t)`.
 - `δt = finalTime / 4.0`.
 - `alg = nothing`.
+- `ICType = "data"`.
 """
 function PDE_Setup(x, t;
     meshPoints = LinRange(extrema(x)..., 500),
@@ -177,16 +180,18 @@ function PDE_Setup(x, t;
     RHS = [0.0, -1.0, 0.0],
     finalTime = maximum(t),
     δt = finalTime / 4.0,
-    alg = nothing)
+    alg = nothing,
+    ICType = "data")
     @assert length(LHS) == length(RHS) == 3 "The provided boundary condition vectors LHS and RHS must be of length 3."
     @assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
+    @assert ICType ∈ ["data", "gp"]
     if δt isa Number
         δt = 0:δt:finalTime
         if length(δt) ≠ length(unique(t)) 
             error("Length of δt must be the same as the number of unique time points in t.")
         end
     end
-    return PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg)
+    return PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg, ICType)
 end
 
 """
