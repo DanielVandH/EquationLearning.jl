@@ -174,11 +174,9 @@ Estimate values for the delay, diffusion, and reaction parameters. See [`bootstr
 - `finalTime`: The final time to give the solution to the PDE at.
 - `alg`: The algorithm to use for solving the discretised PDE.
 - `δt`: A vector specifying the times to return the solution to the discretised PDE at.
-- `meshPoints`: The spatial mesh to use for solving the PDEs involved when computing the `"GLS"` loss function.
 - `SSEArray`: Cache array for storing the solutions to the PDE. 
 - `Du`: Cache array for storing the values of the diffusion function at the mesh points. Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
 - `Ru`: Cache array for storing the values of the reaction function at the mesh points.  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
-- `D′u`: Cache array for storing the values of the derivative of the diffusion function at the mesh points.  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
 - `TuP`: Cache array for storing the values of the delay function at the unscaled times (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
 - `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
 - `RuP`: Cache array for storing the values of the reaction function at the estimated density values (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
@@ -210,9 +208,8 @@ function learn_equations!(x, t, u,
     α, β, γ, stacked_params, 
     lowers, uppers, constrained, obj_values,
     obj_scale_GLS, obj_scale_PDE, 
-    N, V, Δx, LHS, RHS, initialCondition, finalTime, alg, δt,
-    meshPoints, SSEArray, 
-    Du, Ru, D′u, TuP, DuP, RuP, D′uP, RuN,
+    N, V, Δx, LHS, RHS, initialCondition, finalTime, alg, δt, SSEArray, 
+    Du, Ru, TuP, DuP, RuP, D′uP, RuN,
     inIdx, unscaled_t̃, tt, d, r, 
     errs, MSE, optim_setup,
     iterate_idx, closest_idx, nodes, weights, show_losses, σₙ,
@@ -233,9 +230,9 @@ function learn_equations!(x, t, u,
 
     # Define the optimisation function 
     if constrained
-        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, lowers, uppers, αβγ₀, Fminbox(LBFGS()), optoptions; autodiff = :forward)
+        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, lowers, uppers, αβγ₀, Fminbox(LBFGS()), optim_setup; autodiff = :forward)
     else
-        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, αβγ₀, LBFGS(), optoptions; autodiff = :forward)
+        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, αβγ₀, LBFGS(), optim_setup; autodiff = :forward)
     end
 
     # Optimise 
