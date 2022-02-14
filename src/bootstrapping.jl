@@ -214,7 +214,7 @@ function bootstrap_helper(x, t, α₀, β₀, γ₀, lowers, uppers, gp_setup::G
 end
 
 """
-    bootstrap_gp(x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers; <keyword arguments>)
+    bootstrap_gp(x::T1, t::T1, u::T2, T::T2, D::T2, D′::T2, R::T2, α₀::T1, β₀::T1, γ₀::T1, lowers::T1, uppers::T1; <keyword arguments>)
 
 Perform bootstrapping on the data `(x, t, u)` to learn the appropriate functional forms of 
 `(T, D, R)` with uncertainty. The type signatures `T1` and `T2` refer to `AbstractVector`s and `Function`s, respectively.
