@@ -84,6 +84,10 @@ A struct defining some arguments for [`bootstrap_gp`](@ref).
 - `B::Int`: Number of bootstrap samples.
 - `τ::Tuple{Float64, Float64}`: A tuple of the form `(τ₁, τ₂)` which gives the tolerance `τ₁` for thresholding `f` and `τ₂` for thresholding `fₜ`. See also [`data_thresholder`](@ref).
 - `Optim_Restarts::Int`: Number of times to restart the optimiser for the nonlinear least squares problem. See also [`learn_equations!`](@ref).
+- `constrained::Bool`: `true` if the optimisation problems should be constrained, and `false` otherwise.
+- `obj_scale_GLS::Float64`: The amount by which the GLS loss function should be scaled.
+- `obj_scale_PDE::Float64`: The amount by which the PDE loss function should be scaled.
+- `show_losses::Bool`: `true` if the loss function should be printed to the REPL throughout the optimisation process, and `false` otherwise.
 """
 struct Bootstrap_Setup
     bootₓ::AbstractVector
