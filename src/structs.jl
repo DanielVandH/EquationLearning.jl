@@ -175,6 +175,7 @@ function PDE_Setup(x, t;
     δt = finalTime / 4.0,
     alg = nothing)
     @assert length(LHS) == length(RHS) == 3 "The provided boundary condition vectors LHS and RHS must be of length 3."
+    @assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
     if δt isa Number
         δt = 0:δt:finalTime
         if length(δt) ≠ length(unique(t)) 
