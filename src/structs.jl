@@ -137,7 +137,7 @@ function Bootstrap_Setup(x::AbstractVector, t::AbstractVector;
 end
 
 """
-    struct PDE_Setup 
+    mutabe struct PDE_Setup 
 
 A struct defining some arguments for the PDEs in [`bootstrap_gp`](@ref) and [`boot_pde_solve`](ref).
 
@@ -150,7 +150,7 @@ A struct defining some arguments for the PDEs in [`bootstrap_gp`](@ref) and [`bo
 - `alg`: Algorithm to use for solving the PDEs. If you want to let `DifferentialEquations.jl` select the algorithm automatically, specify `alg = nothing`. If automatic differentiation is being used in the ODE algorithm, then no `Sundials` algorithms can be used.
 - `ICType`: Type of initial condition to use. If `ICType == "data"` then a spline is put through the data for the initial condition. If `ICType = "gp"`, then the initial condition is given by a sample of a Gaussian process.
 """
-struct PDE_Setup
+mutable struct PDE_Setup
     meshPoints::AbstractVector
     LHS::Vector{Float64}
     RHS::Vector{Float64}
