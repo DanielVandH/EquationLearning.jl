@@ -25,6 +25,7 @@ Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
 Todo = "b28a226c-6cff-11e9-1336-699fd753ab00"
 
 [compat]
+StatsPlots = "0.14"
 julia = "1"
 
 [extras]
