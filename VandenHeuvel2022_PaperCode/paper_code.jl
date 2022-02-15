@@ -147,6 +147,19 @@ save("figures/jin_assay_data_spacetime_plots.pdf", jin_assay_data_gp_bands_fig_s
 #####################################################################
 ## Obtain all the outputs for each study
 #####################################################################
+## Note the following definitions for the first argument (n) of set_parameters below:
+# n = 1:    A simulation study with no delay and a Fisher-Kolmogorov model.
+# n = 2:    A simulation study with no delay and a Porous-Fisher model.
+# n = 3:    A simulation study with no delay and diffusion given by `D₀ + D₁(u/K)ᵐ`.
+# n = 4:    A simulation study with delay and a Fisher-Kolmogorov model.
+# n = 5:    A simulation study with delay and a Porous-Fisher model.
+# n = 6:    A simulation study with delay and diffusion given by `D₀ + D₁(u/K)ᵐ`.
+# n = 7:    Data from Jin et al. (2016), assuming no delay and a Fisher-Kolmogorov model.
+# n = 8:    Data from Jin et al. (2016), assuming no delay and a Porous-Fisher model.
+# n = 9:    Data from Jin et al. (2016), assuming no delay and a diffusion function given by `D₀ + D₁(u/K)ᵐ`.
+# n = 10:   Data from Jin et al. (2016), assuming delay and a Fisher-Kolmogorov model.
+# n = 11:   Data from Jin et al. (2016), assuming delay and a Porous-Fisher model.
+# n = 12:   Data from Jin et al. (2016), assuming delay and a diffusion function given by `D₀ + D₁(u/K)ᵐ`.
 
 x_pde_1_1, t_pde_1_1, u_pde_1_1, args_1_1 = set_parameters(1, assay_data[1], 1, x_scale, t_scale)
 x_pde_2_1, t_pde_2_1, u_pde_2_1, args_2_1 = set_parameters(2, assay_data[1], 1, x_scale, t_scale)
