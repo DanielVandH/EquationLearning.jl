@@ -1,5 +1,5 @@
 """
-    Generate_Data(x₀, u₀, T, D, R, α, β, γ, δt, finalTime; <keyword arguments>)
+    generate_data(x₀, u₀, T, D, R, α, β, γ, δt, finalTime; <keyword arguments>)
 
 Generate synthetic data from values `(x₀, t₀)` at `t = 0` with exact mechanisms
 `T`, `D`, and `R` for delay, diffusion, and reaction, respectively. A Gaussian process 
@@ -23,32 +23,32 @@ fitted Gaussian process.
 - `N = 1000`: The number of mesh points to use.
 - `LHS = [0.0, 1.0, 0.0]`: Vector defining the left-hand boundary conditions for the PDE. See also the definitions of `(a₀, b₀, c₀)` in [`sysdegeneral!`](@ref).
 - `RHS = [0.0, -1.0, 0.0]`: Vector defining the right-hand boundary conditions for the PDE. See also the definitions of `(a₁, b₁, c₁)` in [`sysdegeneral!`](@ref).
-- `alg = CVODE_BDF(linear_solver = :Band, jac_upper = 1, jac_lower = 1)`: The algorithm to use for solving the differential equations.
+- `alg = nothing`: The algorithm to use for solving the differential equations.
 - `N_thin = 100`: The number of points to take from the solution at each time.
 - `num_restarts = 50`: The number of times to restart the optimiser for fitting the Gaussian process to the data.
 - `D_params`: Additional known parameters for the diffusion function.
 - `R_params`: Additional known parameters for the reaction function.
 - `T_params`: Additional known parameters for the delay function.
 """
-function Generate_Data(x₀, u₀, T, D, R, α, β, γ, δt, finalTime; 
+function generate_data(x₀, u₀, T, D, R, α, β, γ, δt, finalTime; 
     N = 1000, LHS = [0.0, 1.0, 0.0], RHS = [0.0, -1.0, 0.0], 
-    alg = CVODE_BDF(linear_solver = :Band, jac_upper = 1, jac_lower = 1), 
+    alg = nothing, 
     N_thin = 100, num_restarts = 50, D_params, R_params, T_params)
-    @assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
+    @assert length(x₀) == length(u₀) "The lengths of the provided data vectors must all be equal."
     try
-        D(u[1], β₀, D_params)
+        D(u₀[1], β, D_params)
     catch
-        throw("Either the provided vector of diffusion parameters, β₀ = $β₀, is not of adequate size, or D_params = $D_params has been incorrectly specified.")
+        throw("Either the provided vector of diffusion parameters, β₀ = $β, is not of adequate size, or D_params = $D_params has been incorrectly specified.")
     end
     try
-        R(u[1], γ₀, R_params)
+        R(u₀[1], γ, R_params)
     catch
-        throw("Either the provided vector of reaction parameters, γ₀ = $γ₀, is not of adequate size, or R_params = $R_params has been incorrectly specified.")
+        throw("Either the provided vector of reaction parameters, γ₀ = $γ, is not of adequate size, or R_params = $R_params has been incorrectly specified.")
     end
     try
-        T(t[1], α₀, T_params)
+        T(0.0, α, T_params)
     catch
-        throw("Either the provided vector of delay parameters, α₀ = $α₀, is not of adequate size, or T_params = $T_params has been incorrectly specified.")
+        throw("Either the provided vector of delay parameters, α₀ = $α, is not of adequate size, or T_params = $T_params has been incorrectly specified.")
     end
 
     # Fit a smooth curve using GPs 
@@ -99,7 +99,7 @@ function Generate_Data(x₀, u₀, T, D, R, α, β, γ, δt, finalTime;
     sol = DifferentialEquations.solve(prob, alg; saveat = δt)
     u = abs.(hcat(sol.u...))
     # Add noise 
-    u .+= exp(gp.logNoise) .* randn(size(u))
+    u .+= exp(gp.logNoise.value) .* randn(size(u))
     u .= max.(u, 0.0)
     # Thin the data 
     thin_idx = 1:trunc(Int64, N / N_thin):N
