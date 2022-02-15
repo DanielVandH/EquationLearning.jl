@@ -349,7 +349,7 @@ The random sample is updated in-place into `F`.
 end
 
 """
-    precompute_gp_mean(x, t, u, gp_setup::GP_Setup, bootstrap_setup::Bootstrap_Setup)   
+    precompute_gp_mean!(gp_setup::GP_Setup, x, t, u, bootstrap_setup::Bootstrap_Setup)   
 
 Computes the Gaussian process and corresponding mean vector and Cholesky factor for a 
 joint Gaussian process defined by the data `(x, t, u)`. See also 
@@ -365,7 +365,7 @@ joint Gaussian process defined by the data `(x, t, u)`. See also
 # Outputs 
 - `gp_setup`: The mutable struct `gp_setup` is updated with the fitted Gaussian process `gp` and the mean vector and Cholesky factor.
 """
-function precompute_gp_mean(x, t, u, gp_setup::GP_Setup, bootstrap_setup::Bootstrap_Setup)
+function precompute_gp_mean!(gp_setup::GP_Setup, x, t, u, bootstrap_setup::Bootstrap_Setup)
     gp_setup.gp = fit_GP(x, t, u, gp_setup)
     _, _, _, _, _, _, Xₛ, _, _ = bootstrap_grid(x, t, bootstrap_setup.bootₓ, bootstrap_setup.bootₜ)
     gp_setup.μ, gp_setup.L = compute_joint_GP(gp_setup.gp, Xₛ; nugget = gp_setup.nugget)
