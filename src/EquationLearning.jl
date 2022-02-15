@@ -8,6 +8,7 @@ todo"Add Bayes PDE-Find from Martina-Perez et al. (2021)."
 todo"Add the biologically informed neural networks from Lagergren et al. (2020)."
 todo"Add some detailed unit tests."
 todo"Remove unnecessary dependencies and work on precompilation time."
+todo"Add back in the Jacobian computation in the PDEs."
 
 #####################################################################
 ## Required packages
