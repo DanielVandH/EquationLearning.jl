@@ -83,7 +83,7 @@ function set_parameters(n, dat, dat_idx, x_scale, t_scale)
         N = 1000
         LHS = [0.0, 1.0, 0.0]
         RHS = [0.0, -1.0, 0.0]
-        alg = DifferentialEquations.Tsit5()
+        alg = nothing
         N_thin = 50
         num_restarts = 50
         D_params = 1.7e-3 * x_scale^2
@@ -100,6 +100,14 @@ function set_parameters(n, dat, dat_idx, x_scale, t_scale)
         x_pde = dat.Position
         t_pde = dat.Time
         u_pde = dat.AvgDens
+        δt = LinRange(extrema(dat.Time)..., 4)
+        finalTime = maximum(dat.Time)
+        LHS = [0.0, 1.0, 0.0]
+        RHS = [0.0, -1.0, 0.0]
+        alg = nothing
+        D_params = 1.7e-3 * x_scale^2
+        R_params = 1.7e-3 * x_scale^2
+        T_params = nothing
     end
     ## Setup the bootstrap
     bootₓ = LinRange(extrema(x)..., 80)
