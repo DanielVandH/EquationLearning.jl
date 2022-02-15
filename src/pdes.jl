@@ -48,7 +48,6 @@ Function for computing the system of ODEs used in a discretised delay-reaction-d
 The values are updated in-place into the vector `dudt` for the new value of `dudt` at time `t`.
 """
 function sysdegeneral!(dudt, u, p, t)
-    todo"Add back in the Jacobian."
     N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, DD, RR, T, D, R, tb, db, rb, D_params, R_params, T_params = p
     if typeof(DD) <: PreallocationTools.DiffCache # If we're doing automatic differentiation 
         DD = get_tmp(DD, D(u[1], db, D_params))
