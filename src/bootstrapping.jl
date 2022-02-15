@@ -16,6 +16,54 @@
 #####################################################################
 
 """
+    bootstrap_grid(x, t, bootₓ, bootₜ)
+
+Computes the grid used for bootstrapping. See also [`bootstrap_helper`](@ref) and [`bootstrap_gp`](@ref).
+
+# Arguments 
+- `x`: The original spatial data. 
+- `t`: The original temporal data.
+- `bootₓ`: The spatial bootstrapping grid.
+- `bootₜ`: The temporal bootstrapping grid.
+
+# Outputs
+- `x_min`: The minimum `x` value.
+- `x_max`: The maximum `x` value.
+- `t_min`: The minimum `t` value.
+- `t_max`: The maximum `t` value.
+- `x_rng`: The range of the `x` values, `x_max - x_min`.
+- `t_rng`: The range of the `t` values, `t_max - t_min`.
+- `Xₛ`: The test matrix for the bootstrapping grid data.
+- `unscaled_t̃`: The unscaled `t` values for the bootstrapping grid. Used for computing the loss function later.
+- `nₓnₜ`: The number of test data points.
+"""
+function bootstrap_grid(x, t, bootₓ, bootₜ)
+    # Compute the extrema and range
+    x_min, x_max = extrema(x)
+    t_min, t_max = extrema(t)
+    x_rng = x_max - x_min
+    t_rng = t_max - t_min
+
+    # Compute the grid
+    nₓ = length(bootₓ)
+    nₜ = length(bootₜ)
+    x̃ = repeat(bootₓ, outer = nₜ)
+    t̃ = repeat(bootₜ, inner = nₓ)
+    unscaled_t̃ = copy(t̃)
+
+    # Scale the vectors 
+    @. x̃ = (x̃ - x_min) / x_rng
+    @. t̃ = (t̃ - t_min) / t_rng
+
+    # Compute the test matrix 
+    Xₛ = [vec(x̃)'; vec(t̃)']
+    nₓnₜ = size(Xₛ, 2)
+
+    # Return 
+    return x_min, x_max, t_min, t_max, x_rng, t_rng, Xₛ, unscaled_t̃, nₓnₜ
+end
+
+"""
     preallocate_bootstrap(nₓnₜ, α₀, β₀, γ₀, B)
 
 Creates cache arrays and computes certain parameters 
