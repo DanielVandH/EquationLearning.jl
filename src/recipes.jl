@@ -28,10 +28,12 @@ A box is also placed around the plot.
 # Outputs
 The plot `p` is updated in-place with the new font size and box.
 """
-function plot_aes!(p, size)
-    plot!(p, titlefontsize = size, tickfontsize = size, legendfontsize = size,
-        guidefontsize = size, legendtitlefontsize = size,
-        framestyle = :box)
+function plot_aes!(ax, size)
+    ax.xlabelsize = size 
+    ax.ylabelsize = size
+    ax.xticklabelsize = size 
+    ax.yticklabelsize = size
+    ax.titlesize = size
 end
 
 """
