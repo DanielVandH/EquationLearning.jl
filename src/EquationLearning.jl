@@ -25,7 +25,7 @@ using LinearAlgebra
 using MuladdMacro 
 using ODEInterfaceDiffEq 
 using Optim 
-using Plots 
+using CairoMakie
 using PreallocationTools 
 using Printf 
 using StatsBase 
