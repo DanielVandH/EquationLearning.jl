@@ -140,7 +140,7 @@ function set_parameters(n, dat, dat_idx, x_scale, t_scale)
     pde_setup = EquationLearning.PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg, ICType)
     ## Other and return 
     optim_setup = Optim.Options()
-    return x_pde, t_pde, u_pde, x, t, u, T, D, D′, R, α₀, β₀, γ₀,
+    return x_pde, t_pde, u_pde, (x, t, u, T, D, D′, R, α₀, β₀, γ₀,
     lowers, uppers, gp_setup, bootstrap_setup, optim_setup,
-    pde_setup, D_params, R_params, T_params
+    pde_setup, D_params, R_params, T_params)
 end
