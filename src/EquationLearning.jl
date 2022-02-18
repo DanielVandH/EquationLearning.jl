@@ -33,12 +33,8 @@ using PreallocationTools
 using Printf 
 using StatsBase 
 using Random
-using StatsPlots 
 using KernelDensity   
 using Sundials
-using Ipopt 
-using JuMP 
-using MultiJuMP
 
 #####################################################################
 ## Load files 
