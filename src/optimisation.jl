@@ -70,7 +70,7 @@ function loss_function(αβγ; u,
     N, V, Δx, LHS, RHS,
     T, D, D′, R,
     initialCondition, finalTime, EQLalg, δt, SSEArray, Du, Ru, TuP, DuP, RuP, D′uP, RuN,
-    inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE, nodes, weights, maxf,
+    inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE, glnodes, glweights, maxf,
     D_params, R_params, T_params, iterate_idx, closest_idx, show_losses, σₙ, PDEkwargs...)
     α = @views αβγ[1:tt]
     β = @views αβγ[(tt+1):(tt+d)]
@@ -78,11 +78,10 @@ function loss_function(αβγ; u,
     RuN = get_tmp(RuN, first(αβγ)) # This extracts the cache array with the same type as the elements in αβγ
     total_loss = eltype(αβγ)(0.0) # eltype ensures we get the correct type for the dual numbers
     Reaction = u -> R(maxf / 2 * (u + 1), γ, R_params) # This function is taking the interval [0, fmax] into [-1, 1] to use Gauss-Legendre quadrature; ignoring the fmax/2 Jacobian in the integrand since this is positive anyway
-    RuN .= Reaction.(nodes)
-    @inbounds for idx in eachindex(nodes)
-        RuN[idx] = Reaction(nodes[idx])
+    @inbounds for idx in eachindex(glnodes)
+        RuN[idx] = Reaction(glnodes[idx])
     end
-    Ival = dot(weights, RuN) # Integrate the reaction curve over [0, fmax] using Gauss-Legendre quadrature
+    Ival = dot(glweights, RuN) # Integrate the reaction curve over [0, fmax] using Gauss-Legendre quadrature
     local GLSC = Inf # So it can be displayed later on if needed - local allows it to enter loops
     local PDEC = Inf
     if Ival < 0.0 # Negative area ⟹ method won't converge
@@ -102,7 +101,7 @@ function loss_function(αβγ; u,
                     MSE[i] = abs2((u[i] - val) / σₙ)
                 end
             end
-            GLSC = mean(MSE) / obj_scale_GLS
+            GLSC = obj_scale_GLS(mean(MSE))
             total_loss += GLSC
         catch err
             println(err)
@@ -124,13 +123,13 @@ function loss_function(αβγ; u,
             if DuP[inIdx[1]] < 0.0 || DuP[inIdx[end>>1]] < 0.0 || DuP[inIdx[end]] < 0.0 || TuP[inIdx[1]] < 0.0 || TuP[inIdx[end>>1]] < 0.0 || TuP[inIdx[end]] < 0.0
                 return Inf
             else
-                PDEC = mean(errs) / obj_scale_PDE
+                PDEC = obj_scale_PDE(mean(errs))
                 total_loss += PDEC
             end
         end
     end
     if show_losses
-        @printf "Scaled GLS loss contribution: %.6g. Scaled PDE loss contribution: %.6g.\n" GLSC PDEC
+        @printf "Scaled GLS loss contribution: %.6g. Scaled PDE loss contribution: %.6g.\n" GLSC PDEC 
     end
     return total_loss
 end
@@ -202,17 +201,17 @@ Estimate values for the delay, diffusion, and reaction parameters. See [`bootstr
 The estimates for the delay parameters, `α`, diffusion parameters, `β`, and reaction parameters, 
 `γ`, are updated in-place.
 """
-function learn_equations!(x, t, u, 
+function learn_equations!(x, t, u,
     f, fₜ, fₓ, fₓₓ,
     T, D, D′, R, T_params, D_params, R_params,
-    α, β, γ, stacked_params, 
+    α, β, γ, stacked_params,
     lowers, uppers, constrained, obj_values,
-    obj_scale_GLS, obj_scale_PDE, 
-    N, V, Δx, LHS, RHS, initialCondition, finalTime, alg, δt, SSEArray, 
+    obj_scale_GLS, obj_scale_PDE,
+    N, V, Δx, LHS, RHS, initialCondition, finalTime, alg, δt, SSEArray,
     Du, Ru, TuP, DuP, RuP, D′uP, RuN,
-    inIdx, unscaled_t̃, tt, d, r, 
+    inIdx, unscaled_t̃, tt, d, r,
     errs, MSE, optim_setup,
-    iterate_idx, closest_idx, nodes, weights, show_losses, σₙ,
+    iterate_idx, closest_idx, glnodes, glweights, show_losses, σₙ,
     PDEkwargs...)
     @assert length(obj_values) == size(stacked_params, 2) "The number of objective values must equal the provided number of initial parameter estimate restarts."
 
@@ -222,10 +221,10 @@ function learn_equations!(x, t, u,
         f, fₓ, fₓₓ, fₜ,
         N, V, Δx, LHS, RHS,
         T, D, D′, R,
-        initialCondition, finalTime, alg, 
-        δt, SSEArray, Du, Ru, TuP, DuP, RuP, D′uP, RuN, 
+        initialCondition, finalTime, EQLalg = alg,
+        δt, SSEArray, Du, Ru, TuP, DuP, RuP, D′uP, RuN,
         inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE,
-        nodes, weights, maxf, D_params, R_params, T_params,
+        glnodes, glweights, maxf, D_params, R_params, T_params,
         iterate_idx, closest_idx, show_losses, σₙ, PDEkwargs...)
 
     # Define the optimisation function 
@@ -236,15 +235,16 @@ function learn_equations!(x, t, u,
     end
 
     # Optimise 
-    @inbounds for (j, params) in enumerate(eachcol(stacked_params))
+    @inbounds for j in 1:size(stacked_params, 2)
         try
-            prob = fit_fnc(params)
+            prob = fit_fnc(stacked_params[:, j])
             obj_values[j] = prob.minimum
-        catch err 
+        catch err
             println(err)
             obj_values[j] = Inf
         end
     end
+
     min_obj_idx = findmin(obj_values)[2]
     fit_model = fit_fnc(stacked_params[:, min_obj_idx])
     final_params = fit_model.minimizer
