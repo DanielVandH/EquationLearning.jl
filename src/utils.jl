@@ -92,3 +92,26 @@ function data_thresholder(f, fₜ, τ)
     inIdx = findall(cond1 .& cond2 .& cond3)
     return inIdx
 end
+
+"""
+    compute_ribbon_features(x; level = 0.05)
+
+Computes features for a confidence interval plot for some data `x`.
+
+# Arguments 
+- `x`: The data to use for plotting.
+
+# Keyword Arguments 
+- `level = 0.05`: The significance level for computing the credible intervals for the parameter values. 
+
+# Outputs 
+- `x_mean`: The mean of each row of `x`.
+- `x_lower`: The `100(`level/2`)%` quantile for each row of `x`.
+- `x_upper`: The `100(`1-level/2`)%` quantile for each row of `x`.
+"""
+function compute_ribbon_features(x; level = 0.05)
+    x_mean = [mean(r) for r in eachrow(x)]
+    x_lower = [quantile(r, level / 2) for r in eachrow(x)]
+    x_upper = [quantile(r, 1 - level / 2) for r in eachrow(x)]
+    return x_mean, x_lower, x_upper
+end
