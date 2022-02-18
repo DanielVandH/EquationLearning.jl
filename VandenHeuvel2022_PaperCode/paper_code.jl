@@ -14,6 +14,7 @@ using GaussianProcesses     # For fitting Gaussian processes
 using DifferentialEquations # For differential equations
 using StatsBase             # For std
 using LinearAlgebra         # For setting number of threads to prevent StackOverflowError
+using Setfield              # For modifying immutable structs
 include("set_parameters.jl")
 
 #####################################################################
@@ -100,7 +101,7 @@ for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(gp_plots)))
     for (s, T) in enumerate(unique(t))
         scatter!(gp_plots[i, j], x[t.==T], u[t.==T], color = colors[s], markersize = 3)
         lines!(gp_plots[i, j], data.Position[data.Time.==T], μ[data.Time.==T], color = colors[s])
-        band!(gp_plots[i, j], data.Position[data.Time.==T], upper[data.Time.==T], lower[data.Time.==T], color = (colors[s], 0.5))
+        band!(gp_plots[i, j], data.Position[data.Time.==T], upper[data.Time.==T], lower[data.Time.==T], color = (colors[s], 0.35))
     end
     hlines!(gp_plots[i, j], K, color = :black)
     ylims!(gp_plots[i, j], 0.0, 2000.0)
@@ -143,4 +144,45 @@ cb = Colorbar(jin_assay_data_gp_bands_fig_spacetime[1:3, 3])
 cb.colorrange = (0.0, 2000.0)
 cb.label = "Cell density (cells/mm²)"
 save("figures/jin_assay_data_spacetime_plots.pdf", jin_assay_data_gp_bands_fig_spacetime, px_per_unit = 2)
+
+#####################################################################
+## Some testing
+#####################################################################
+
+x_pde, t_pde, u_pde, x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers, gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params = set_parameters(1, assay_data[1], 1, x_scale, t_scale)
+bootstrap_setup = @set bootstrap_setup.B = 10
+bootstrap_setup = @set bootstrap_setup.show_losses = true
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 1
+
+bgp = bootstrap_gp(x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params)
+delayDensityFigure, diffusionDensityFigure, reactionDensityFigure = density_results(bgp; fontsize = 23)
+delayCurvePlots, diffusionCurvePlots, reactionCurvePlots = curve_results(bgp; fontsize = 23)
+solns_all = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "data")
+
+
+colors = [:black, :blue, :red, :magenta, :green]
+level = 0.05
+fontsize = 23
+
+## Setup
+N = length(bgp.pde_setup.meshPoints)
+M = length(bgp.pde_setup.δt)
+@assert length(colors) == M "There must be as many provided colors as there are unique time values."
+soln_vals_mean = zeros(N, M)
+soln_vals_lower = zeros(N, M)
+soln_vals_upper = zeros(N, M)
+for j = 1:M
+    soln_vals_mean[:, j], soln_vals_lower[:, j], soln_vals_upper[:, j] = compute_ribbon_features(solns_all[:, :, j]; level = level)
+end
+
+# Initiate axis 
+pdeSolutionPlots_BGP = Figure(fontsize = fontsize)
+ax = Axis(pdeSolutionPlots_BGP[1, 1], xlabel = L"x", ylabel = L"u(x, t)")
+
+# Plot the lines, ribbons, and data 
+@views for j in 1:M 
+    lines!(ax, bgp.pde_setup.meshPoints, soln_vals_mean[:, j], color = colors[j])
+    band!(ax, bgp.pde_setup.meshPoints, soln_vals_upper[:, j], soln_vals_lower[:, j], color = (colors[j], 0.35))
+    scatter!(ax, x_pde[t_pde .== bgp.pde_setup.δt[j]], u_pde[t_pde .== bgp.pde_setup.δt[j]], color = colors[j], markersize = 7)
+end
 
