@@ -9,6 +9,8 @@ todo"Add the biologically informed neural networks from Lagergren et al. (2020).
 todo"Add some detailed unit tests."
 todo"Remove unnecessary dependencies and work on precompilation time."
 todo"Add back in the Jacobian computation in the PDEs."
+todo"Update documentation of precompute_gp_mean!."
+todo"Update documentation of GP_Setup."
 
 #####################################################################
 ## Required packages
@@ -30,8 +32,13 @@ using CairoMakie
 using PreallocationTools 
 using Printf 
 using StatsBase 
-using StatsPlots    
+using Random
+using StatsPlots 
+using KernelDensity   
 using Sundials
+using Ipopt 
+using JuMP 
+using MultiJuMP
 
 #####################################################################
 ## Load files 
@@ -40,7 +47,6 @@ using Sundials
 include("structs.jl")           # Definining certain structures
 include("gps.jl")               # Fitting Gaussian processes 
 include("pdes.jl")              # Working with PDEs 
-include("recipes.jl")           # Utility functions for working with plots
 include("bootstrapping.jl")     # Bootstrapping functions 
 include("optimisation.jl")      # Functions for optimising parameters 
 include("utils.jl")             # Extra utility functions 
@@ -51,6 +57,6 @@ include("synthetic_data.jl")    # Function for generating synthetic data
 ## Export functions
 #####################################################################
 
-export bootstrap_gp, curve_results, density_results, pde_results
+export bootstrap_gp, boot_pde_solve, curve_results, density_results, pde_results, GP_Setup, Bootstrap_Setup, PDE_Setup
 
 end
