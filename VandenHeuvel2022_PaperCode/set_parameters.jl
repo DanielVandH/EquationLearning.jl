@@ -78,7 +78,7 @@ function set_parameters(n, dat, dat_idx, x_scale, t_scale)
             γ = [0.0525, 0.0714, 0.0742, 0.0798, 0.0772, 0.0951][dat_idx] * t_scale
         end
         ## Setup PDE for generating synthetic data
-        δt = LinRange(extrema(dat.Time)..., 4)
+        δt = LinRange(extrema(dat.Time)..., 5)
         finalTime = maximum(dat.Time)
         N = 1000
         LHS = [0.0, 1.0, 0.0]
@@ -100,7 +100,7 @@ function set_parameters(n, dat, dat_idx, x_scale, t_scale)
         x_pde = dat.Position
         t_pde = dat.Time
         u_pde = dat.AvgDens
-        δt = LinRange(extrema(dat.Time)..., 4)
+        δt = LinRange(extrema(dat.Time)..., 5)
         finalTime = maximum(dat.Time)
         LHS = [0.0, 1.0, 0.0]
         RHS = [0.0, -1.0, 0.0]
@@ -116,8 +116,8 @@ function set_parameters(n, dat, dat_idx, x_scale, t_scale)
     τ = (0.0, 0.0)
     Optim_Restarts = 10
     constrained = false
-    obj_scale_GLS = 1.0
-    obj_scale_PDE = 1.0
+    obj_scale_GLS = log10
+    obj_scale_PDE = log10
     show_losses = false
     bootstrap_setup = EquationLearning.Bootstrap_Setup(bootₓ, bootₜ, B, τ, Optim_Restarts, constrained, obj_scale_GLS, obj_scale_PDE, show_losses)
     ## Setup the GP parameters 
@@ -125,9 +125,10 @@ function set_parameters(n, dat, dat_idx, x_scale, t_scale)
     ℓₜ = log.([1e-4, 1.0])
     σ = log.([1e-1, 2std(u)])
     σₙ = log.([1e-5, 2std(u)])
+    nugget = 1e-4
     GP_Restarts = 50
-    gp_setup = EquationLearning.GP_Setup(u; ℓₓ, ℓₜ, σ, σₙ, GP_Restarts)
-    EquationLearning.precompute_gp_mean!(gp_setup, x, t, u, bootstrap_setup)
+    gp, μ, L = EquationLearning.precompute_gp_mean(x, t, u, ℓₓ, ℓₜ, σ, σₙ, nugget, GP_Restarts, bootstrap_setup)
+    gp_setup = EquationLearning.GP_Setup(u; ℓₓ, ℓₜ, σ, σₙ, GP_Restarts, μ, L, nugget, gp)
     ## Required arguments for bootstrapping
     α₀ = Vector{Float64}([])
     β₀ = [1.0]
@@ -136,11 +137,10 @@ function set_parameters(n, dat, dat_idx, x_scale, t_scale)
     uppers = [2.0, 2.0]
     ## Setup the PDE parameters
     meshPoints = LinRange(extrema(x)..., 500)
-    ICType = "data"
-    pde_setup = EquationLearning.PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg, ICType)
+    pde_setup = EquationLearning.PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg)
     ## Other and return 
-    optim_setup = Optim.Options()
-    return x_pde, t_pde, u_pde, (x, t, u, T, D, D′, R, α₀, β₀, γ₀,
+    optim_setup = Optim.Options(f_reltol = 1e-4, x_reltol = 1e-4, g_reltol = 1e-4)
+    return x_pde, t_pde, u_pde, x, t, u, T, D, D′, R, α₀, β₀, γ₀,
     lowers, uppers, gp_setup, bootstrap_setup, optim_setup,
-    pde_setup, D_params, R_params, T_params)
+    pde_setup, D_params, R_params, T_params
 end
