@@ -32,15 +32,15 @@ Setup for the Gaussian processes. See also [`fit_GP`](@ref) and [`bootstrap_gp`]
 - `nugget::T`: A term to add to the correlation matrix to force the covariance matrix to be symmetric positive definite.
 - `gp::Union{Missing, GPBase}`: Either `Nothing` or a stored Gaussian process. See also [`fit_GP`](@ref).
 """
-mutable struct GP_Setup{T} # We use mutable so that we can update it with the found μ, L, gp if we want
-    ℓₓ::Vector{T}
-    ℓₜ::Vector{T}
-    σ::Vector{T}
-    σₙ::Vector{T}
+struct GP_Setup # We use mutable so that we can update it with the found μ, L, gp if we want
+    ℓₓ::Vector{Float64}
+    ℓₜ::Vector{Float64}
+    σ::Vector{Float64}
+    σₙ::Vector{Float64}
     GP_Restarts::Int
-    μ::Union{Missing,Vector{T}}
-    L::Union{Missing,LowerTriangular{T}}
-    nugget::T
+    μ::Union{Missing,Vector{Float64}}
+    L::Union{Missing,LowerTriangular{Float64}}
+    nugget::Float64
     gp::Union{Missing,GPBase}
 end
 
@@ -96,8 +96,8 @@ struct Bootstrap_Setup
     τ::Tuple{Float64,Float64}
     Optim_Restarts::Int
     constrained::Bool
-    obj_scale_GLS::Float64
-    obj_scale_PDE::Float64
+    obj_scale_GLS::Function
+    obj_scale_PDE::Function
     show_losses::Bool
 end
 
@@ -137,7 +137,7 @@ function Bootstrap_Setup(x::AbstractVector, t::AbstractVector;
 end
 
 """
-    mutabe struct PDE_Setup 
+    struct PDE_Setup 
 
 A struct defining some arguments for the PDEs in [`bootstrap_gp`](@ref) and [`boot_pde_solve`](ref).
 
@@ -148,16 +148,14 @@ A struct defining some arguments for the PDEs in [`bootstrap_gp`](@ref) and [`bo
 - `finalTime::Float64`: The final time to solve the PDE up to.
 - `δt::Union{AbstractVector, Float64}`: A number or a vector specifying the spacing between returned times for the solutions to the PDEs or specific times, respectively.
 - `alg`: Algorithm to use for solving the PDEs. If you want to let `DifferentialEquations.jl` select the algorithm automatically, specify `alg = nothing`. If automatic differentiation is being used in the ODE algorithm, then no `Sundials` algorithms can be used.
-- `ICType`: Type of initial condition to use. If `ICType == "data"` then a spline is put through the data for the initial condition. If `ICType = "gp"`, then the initial condition is given by a sample of a Gaussian process.
 """
-mutable struct PDE_Setup
+struct PDE_Setup
     meshPoints::AbstractVector
     LHS::Vector{Float64}
     RHS::Vector{Float64}
     finalTime::Float64
     δt::AbstractVector
     alg
-    ICType::String
 end
 
 """
