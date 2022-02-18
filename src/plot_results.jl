@@ -31,7 +31,7 @@ density_results(bgp::BootResults; level = 0.05, fontsize = 13, plot_kwargs...)
 - `diffusionDensityPlots`: An array of plots containing a density plot for each diffusion parameter.
 - `reactionDensityPlots`: An array of plots containing a density plot for each reaction parameter.
 """
-function density_results(bgp::BootResults; level = 0.05, fontsize = 13, plot_kwargs...)
+function density_results(bgp::BootResults; level = 0.05, fontsize = 23)
     # Start with delay
     trv = bgp.delayBases
     tt = size(trv, 1)
@@ -58,28 +58,49 @@ function density_results(bgp::BootResults; level = 0.05, fontsize = 13, plot_kwa
     end
 
     # Pre-allocate the plots 
-    delayDensityPlots = Array{AbstractPlot}(undef, tt)
-    diffusionDensityPlots = Array{AbstractPlot}(undef, d)
-    reactionDensityPlots = Array{AbstractPlot}(undef, r)
+    delayDensityAxes = Vector{Axis}(undef, tt)
+    diffusionDensityAxes = Vector{Axis}(undef, d)
+    reactionDensityAxes = Vector{Axis}(undef, r)
     alphabet = join('a':'z') # For labelling the figures
 
     # Plot the delay coefficient densities 
+    delayDensityFigure = Figure(fontsize = fontsize)
     for i = 1:tt
-        delayDensityPlots[i] = dens_plot(trv[i, :], delayCIs[i, :], L"\alpha_%$i", alphabet[i]; size = fontsize, bottom_margin = 2mm, plot_kwargs...) # %$ is string interpolation for LaTeX strings
+        delayDensityAxes[i] = Axis(delayDensityFigure[1, i], xlabel = L"\alpha_%$i", ylabel = "Probability density",
+            title = @sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i], delayCIs[i, 1], delayCIs[i, 2]),
+            titlealign = :left)
+        densdat = kde(trv[i, :])
+        lines!(delayDensityAxes[i], densdat.x, densdat.density, color = :blue, linewidth = 3)
+        CI_range = delayCIs[i, 1] .< densdat.x .< delayCIs[i, 2]
+        band!(delayDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
     end
 
     # Plot the diffusion coefficient densities 
+    diffusionDensityFigure = Figure(fontsize = fontsize)
     for i = 1:d
-        diffusionDensityPlots[i] = dens_plot(dr[i, :], diffusionCIs[i, :], L"\beta_%$i", alphabet[i]; size = fontsize, bottom_margin = 2mm, plot_kwargs...)
+        diffusionDensityAxes[i] = Axis(diffusionDensityFigure[1, i], xlabel = L"\beta_%$i", ylabel = "Probability density",
+            title = @sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i], diffusionCIs[i, 1], diffusionCIs[i, 2]),
+            titlealign = :left)
+        densdat = KernelDensity.kde(dr[i, :])
+        lines!(diffusionDensityAxes[i], densdat.x, densdat.density, color = :blue, linewidth = 3)
+        CI_range = diffusionCIs[i, 1] .< densdat.x .< diffusionCIs[i, 2]
+        band!(diffusionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
     end
 
     # Plot the reaction coefficient densities
+    reactionDensityFigure = Figure(fontsize = fontsize)
     for i = 1:r
-        reactionDensityPlots[i] = dens_plot(rr[i, :], reactionCIs[i, :], L"\gamma_%$i", alphabet[i]; size = fontsize, bottom_margin = 2mm, plot_kwargs...)
+        reactionDensityAxes[i] = Axis(reactionDensityFigure[1, i], xlabel = L"\gamma_%$i", ylabel = "Probability density",
+            title = @sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i], reactionCIs[i, 1], reactionCIs[i, 2]),
+            titlealign = :left)
+        densdat = kde(rr[i, :])
+        lines!(reactionDensityAxes[i], densdat.x, densdat.density, color = :blue, linewidth = 3)
+        CI_range = reactionCIs[i, 1] .< densdat.x .< reactionCIs[i, 2]
+        band!(reactionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
     end
 
     # Return
-    return delayDensityPlots, diffusionDensityPlots, reactionDensityPlots
+    return delayDensityFigure, diffusionDensityFigure, reactionDensityFigure
 end
 
 """
@@ -101,12 +122,11 @@ There are no returned values from this function, but there plots created inside 
 - `diffusionCurvePlots`: A plot containing the learned functional form for the diffusion function, along with an uncertainty ribbon.
 - `reactionCurvePlots`: A plot containing the learned functional form for the reaction function, along with an uncertainty ribbon.
 """
-function curve_results(bgp::BootResults; level = 0.05, fontsize = 13, plot_kwargs...)
+function curve_results(bgp::BootResults; level = 0.05, fontsize = 23)
     # Setup parameters and grid for evaluation
     trv = bgp.delayBases
     dr = bgp.diffusionBases
     rr = bgp.reactionBases
-    tt = size(trv, 1)
     B = size(dr, 2)
     num_u = 500
     num_t = 500
@@ -129,20 +149,22 @@ function curve_results(bgp::BootResults; level = 0.05, fontsize = 13, plot_kwarg
     Ru_vals = compute_ribbon_features(Ru; level = level)
 
     # Plot delay curves 
-    if tt > 0
-        delayCurvePlots = plot_ribbon_with_mean(t_vals, Tu_vals...; label = false, xlabel = L"t", ylabel = L"T(t)", linewidth = 1.3, linecolor = :blue, plot_kwargs...)
-        plot_aes!(delayCurvePlots, fontsize)
-    else
-        delayCurvePlots = nothing
-    end
+    delayCurvePlots = Figure(fontsize = fontsize)
+    ax = Axis(delayCurvePlots[1, 1], xlabel = L"t", ylabel = L"T(t)", linewidth = 1.3, linecolor = :blue)
+    lines!(ax, t_vals, Tu_vals[1])
+    band!(ax, t_vals, Tu_vals[3], Tu_vals[2], color = (:blue, 0.35))
 
     # Plot the diffusion curves 
-    diffusionCurvePlots = plot_ribbon_with_mean(u_vals, Du_vals...; xlabel = L"u", ylabel = L"D(u)", linewidth = 1.3, linecolor = :blue, label = false, plot_kwargs...)
-    plot_aes!(diffusionCurvePlots, fontsize)
+    diffusionCurvePlots = Figure(fontsize = fontsize)
+    ax = Axis(diffusionCurvePlots[1, 1], xlabel = L"u", ylabel = L"D(u)", linewidth = 1.3, linecolor = :blue)
+    lines!(ax, u_vals, Du_vals[1])
+    band!(ax, u_vals, Du_vals[3], Du_vals[2], color = (:blue, 0.35))
 
     # Plot the reaction curves 
-    reactionCurvePlots = plot_ribbon_with_mean(u_vals, Ru_vals...; xlabel = L"u", ylabel = L"R(u)", label = false, plot_kwargs...)
-    plot_aes!(reactionCurvePlots, fontsize)
+    reactionCurvePlots = Figure(fontsize = fontsize)
+    ax = Axis(reactionCurvePlots[1, 1], xlabel = L"u", ylabel = L"R(u)", linewidth = 1.3, linecolor = :blue)
+    lines!(ax, u_vals, Ru_vals[1])
+    band!(ax, u_vals, Ru_vals[3], Ru_vals[2], color = (:blue, 0.35))
 
     # Return 
     return delayCurvePlots, diffusionCurvePlots, reactionCurvePlots
@@ -170,7 +192,8 @@ the computed solutins in [`boot_pde_solve`](@ref).
 - `pdeSolutionPlots_BGP`: The plot of the PDE solutions.
 """
 function pde_results(x_pde, t_pde, u_pde, solns_all, bgp::BootResults;
-    colors = [:black, :blue, :red, :magenta, :green], level = 0.05, fontsize = 13, plot_kwargs...)
+    colors = [:black, :blue, :red, :magenta, :green], level = 0.05, fontsize = 23)
+    ## Setup
     N = length(bgp.pde_setup.meshPoints)
     M = length(bgp.pde_setup.δt)
     @assert length(colors) == M "There must be as many provided colors as there are unique time values."
@@ -180,15 +203,17 @@ function pde_results(x_pde, t_pde, u_pde, solns_all, bgp::BootResults;
     for j = 1:M
         soln_vals_mean[:, j], soln_vals_lower[:, j], soln_vals_upper[:, j] = compute_ribbon_features(solns_all[:, :, j]; level = level)
     end
-    @views pdeSolutionPlots_BGP = plot(bgp.pde_setup.meshPoints, soln_vals_mean[:, 1], label = bgp.pde_setup.δt[1], xlabel = L"x", ylabel = L"u(x, t)", linecolor = colors[1], legend = :top, plot_kwargs...)
-    @views plot!(pdeSolutionPlots_BGP, bgp.pde_setup.meshPoints, soln_vals_lower[:, 1], fillrange = soln_vals_upper[:, 1], fillalpha = 0.35, label = false, color = colors[1])
-    @views for j = 2:M
-        plot!(pdeSolutionPlots_BGP, bgp.pde_setup.meshPoints, soln_vals_mean[:, j], label = bgp.pde_setup.δt[j], linecolor = colors[j])
-        plot!(pdeSolutionPlots_BGP, bgp.pde_setup.meshPoints, soln_vals_lower[:, j], fillrange = soln_vals_upper[:, j], fillalpha = 0.35, label = false, color = colors[j])
+
+    # Initiate axis 
+    pdeSolutionPlots_BGP = Figure(fontsize = fontsize)
+    ax = Axis(pdeSolutionPlots_BGP[1, 1], xlabel = L"x", ylabel = L"u(x, t)")
+
+    # Plot the lines, ribbons, and data 
+    @views for j in 1:M
+        lines!(ax, bgp.pde_setup.meshPoints, soln_vals_mean[:, j], color = colors[j])
+        band!(ax, bgp.pde_setup.meshPoints, soln_vals_upper[:, j], soln_vals_lower[:, j], color = (colors[j], 0.35))
+        scatter!(ax, x_pde[t_pde.==bgp.pde_setup.δt[j]], u_pde[t_pde.==bgp.pde_setup.δt[j]], color = colors[j], markersize = 7)
     end
-    @views for j = 1:M
-        plot!(pdeSolutionPlots_BGP, x_pde[t_pde.==bgp.pde_setup.δt[j]], u_pde[t_pde.==bgp.pde_setup.δt[j]], color = colors[j], seriestype = :scatter, label = false)
-    end
-    plot_aes!(pdeSolutionPlots_BGP, fontsize)
+
     return pdeSolutionPlots_BGP
 end
