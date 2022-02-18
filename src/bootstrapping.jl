@@ -105,7 +105,7 @@ function preallocate_bootstrap(nₓnₜ, α₀, β₀, γ₀, B)
 end
 
 """
-    praellocate_eqlearn(num_restarts, σ₁, σ₂, σ₃, meshPoints, δt, finalTime, Xₛ, tt, d, r, nₓnₜ, gp)
+    preallocate_eqlearn(num_restarts, σ₁, σ₂, σ₃, meshPoints, δt, finalTime, Xₛ, tt, d, r, nₓnₜ, gp)
 
 Creates cache arrays and computes certain parameters that are used for the bootstrapping component. 
 See [`bootstrap_helper`](@ref) for details and [`bootstrap_gp`](@ref) for its use. 
@@ -115,9 +115,12 @@ function preallocate_eqlearn(num_restarts, meshPoints, δt, finalTime, Xₛ, tt,
 
     # Optimisation
     obj_values = zeros(num_restarts)
-    plan, _ = LHCoptim(num_restarts, tt + d + r, 1000) # Construct the initial design
-    stacked_params = Matrix(scaleLHC(plan, [(lowers[i] + 1e-5, uppers[i] - 1e-5) for i in 1:(tt+d+r)])') # Scale into the correct domain. Note that we shift values by 1e-5 so that the points don't lie on the boundary
-
+    if num_restarts ≥ 2
+        plan, _ = LHCoptim(num_restarts, tt + d + r, 1000) # Construct the initial design
+        stacked_params = Matrix(scaleLHC(plan, [(lowers[i] + 1e-5, uppers[i] - 1e-5) for i in 1:(tt+d+r)])') # Scale into the correct domain. Note that we shift values by 1e-5 so that the points don't lie on the boundary
+    else
+        stacked_params = mean(hcat(lowers, uppers); dims = 2) # Use average of lower/upper bounds for parameters when no restarts are required
+    end
     # PDE
     N = length(meshPoints)
     Δx = diff(meshPoints)
@@ -294,15 +297,16 @@ Perform bootstrapping on the data `(x, t, u)` to learn the appropriate functiona
 # Outputs
 - `bgp`: A `BootResults` structure. See [`BootResults`](@ref). 
 """
-function bootstrap_gp(x::T1, t::T1, u::T2,
-    T::T2, D::T2, D′::T2, R::T2, α₀::T1, β₀::T1, γ₀::T1, lowers::T1, uppers::T1;
+function bootstrap_gp(x::T1, t::T1, u::T1,
+    T::Function, D::Function, D′::Function, R::Function,
+    α₀::T1, β₀::T1, γ₀::T1, lowers::T1, uppers::T1;
     gp_setup::GP_Setup = GP_Setup(u),
     bootstrap_setup::Bootstrap_Setup = Bootstrap_Setup(x, t, u),
     optim_setup::Optim.Options = Optim.Options(),
     pde_setup::PDE_Setup = PDE_Setup(x),
-    D_params = nothing, R_params = nothing, T_params = nothing, PDEkwargs...) where {T1<:AbstractVector,T2<:Function}
+    D_params = nothing, R_params = nothing, T_params = nothing, PDEkwargs...) where {T1<:AbstractVector}
     ## Check provided functions and ODE algorithm are correct
-    @assert !(typeof(PDE_Setup.alg) <: Sundials.SundialsODEAlgorithm) "Automatic differentiation is not compatible with Sundials solvers."
+    @assert !(typeof(pde_setup.alg) <: Sundials.SundialsODEAlgorithm) "Automatic differentiation is not compatible with Sundials solvers."
     @assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
     try
         D(u[1], β₀, D_params)
@@ -321,18 +325,18 @@ function bootstrap_gp(x::T1, t::T1, u::T2,
     end
 
     ## Compute indices for finding nearest points in the spatial mesh to the actual spatial data x, along with indices for specific values of time.
-    time_values = Array{Bool}(undef, length(t), length(PDE_Setup.δt))
-    closest_idx = Vector{Vector{Int64}}(undef, length(PDE_Setup.δt))
-    iterate_idx = Vector{Vector{Int64}}(undef, length(PDE_Setup.δt))
+    time_values = Array{Bool}(undef, length(t), length(pde_setup.δt))
+    closest_idx = Vector{Vector{Int64}}(undef, length(pde_setup.δt))
+    iterate_idx = Vector{Vector{Int64}}(undef, length(pde_setup.δt))
     for j = 1:length(unique(t))
-        @views time_values[:, j] .= t .== PDE_Setup.δt[j]
-        @views closest_idx[j] = searchsortednearest.(Ref(PDE_Setup.meshPoints), x[time_values[:, j]]) # Use Ref() so that we broadcast only on x[time_values[:, j]] and not the mesh points
+        @views time_values[:, j] .= t .== pde_setup.δt[j]
+        @views closest_idx[j] = searchsortednearest.(Ref(pde_setup.meshPoints), x[time_values[:, j]]) # Use Ref() so that we broadcast only on x[time_values[:, j]] and not the mesh points
         @views iterate_idx[j] = findall(time_values[:, j])
     end
 
     ## Fit the GP 
-    gp_setup.gp = ismissing(gp_set.gp) ? fit_GP(x, t, u, gp_setup) : gp_setup.gp
-    σₙ = exp(gp_setup.gp.logNoise)
+    gp = ismissing(gp_setup.gp) ? fit_GP(x, t, u, gp_setup) : gp_setup.gp
+    σₙ = exp(gp.logNoise.value)
 
     ## Setup the bootstrapping grid, define some parameters, construct cache arrays, etc.
     x_min, x_max, t_min, t_max, x_rng, t_rng, Xₛ, unscaled_t̃, nₓnₜ,
@@ -349,24 +353,26 @@ function bootstrap_gp(x::T1, t::T1, u::T2,
 
     ## Compute the mean vector and Cholesky factor for the joint Gaussian process of the function and its derivatives 
     if ismissing(gp_setup.μ) || ismissing(gp_setup.L)
-        gp_setup.μ, gp_setup.L = compute_joint_GP(gp_setup.gp, Xₛ; nugget = gp_setup.nugget)
+        μ, L = compute_joint_GP(gp, Xₛ; nugget = gp_setup.nugget)
+    else
+        μ, L = gp_setup.μ, gp_setup.L
     end
 
     ## Now do the equation learning 
-    nodes, weights = gausslegendre(length(RuN.du))
-    for j = 1:B
+    glnodes, glweights = gausslegendre(length(RuN.du))
+    for j = 1:bootstrap_setup.B
         # Draw from N(0, 1) for sampling from the Gaussian process 
         @views randn!(zvals[:, j])
 
         # Compute the required functions and derivatives 
-        @views draw_gp!(ffₜfₓfₓₓ, gp_setup.μ, gp_setup.L, zvals[:, j], ℓz)
+        @views draw_gp!(ffₜfₓfₓₓ, μ, L, zvals[:, j], ℓz)
         f .= ffₜfₓfₓₓ[f_idx]
         fₜ .= ffₜfₓfₓₓ[fₜ_idx] / t_rng
         fₓ .= ffₜfₓfₓₓ[fₓ_idx] / x_rng
         fₓₓ .= ffₜfₓfₓₓ[fₓₓ_idx] / x_rng^2
 
         # Threshold the data 
-        inIdx = data_thresholder(f, fₜ, τ)
+        inIdx = data_thresholder(f, fₜ, bootstrap_setup.τ)
 
         # Compute the initial condition for the PDE
         @views IC1 .= max.(f[Xₛ₀], 0.0)
@@ -382,16 +388,16 @@ function bootstrap_gp(x::T1, t::T1, u::T2,
             delayBases[:, j], diffusionBases[:, j], reactionBases[:, j], stacked_params,
             lowers, uppers, bootstrap_setup.constrained, obj_values,
             bootstrap_setup.obj_scale_GLS, bootstrap_setup.obj_scale_PDE,
-            N, V, Δx, pde_setup.LHS, pde_setup.RHS, initialCondition, 
+            N, V, Δx, pde_setup.LHS, pde_setup.RHS, initialCondition,
             pde_setup.finalTime, pde_setup.alg, pde_setup.δt,
             SSEArray,
             Du, Ru, TuP, DuP, RuP, D′uP, RuN,
             inIdx, unscaled_t̃, tt, d, r,
             errs, MSE, optim_setup,
-            iterate_idx, closest_idx, nodes, weights, show_losses, σₙ,
+            iterate_idx, closest_idx, glnodes, glweights, bootstrap_setup.show_losses, σₙ,
             PDEkwargs...)
 
-        print("Bootstrapping: Step $j of $B. Previous objective value: $(minimum(obj_values)).\u001b[1000D")
+        print("Bootstrapping: Step $j of $(bootstrap_setup.B). Previous objective value: $(minimum(obj_values)).\u001b[1000D")
     end
 
     Xₛⁿ = deepcopy(Xₛ)
@@ -399,5 +405,5 @@ function bootstrap_gp(x::T1, t::T1, u::T2,
     @muladd @views @. Xₛⁿ[2, :] = Xₛ[2, :] * t_rng + t_min
 
     ## Return the results 
-    return BootResults(delayBases, diffusionBases, reactionBases, gp, zvals, Xₛ, Xₛⁿ, bootₓ, bootₜ, T, D, D′, R, D_params, R_params, T_params, μ, L, gp_setup, bootstrap_setup, pde_setup)
+    return BootResults(delayBases, diffusionBases, reactionBases, gp, zvals, Xₛ, Xₛⁿ, bootstrap_setup.bootₓ, bootstrap_setup.bootₜ, T, D, D′, R, D_params, R_params, T_params, μ, L, gp_setup, bootstrap_setup, pde_setup)
 end
