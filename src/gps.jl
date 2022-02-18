@@ -37,12 +37,15 @@ function opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts = 50)
     @assert length(ℓₓ) == length(ℓₜ) == length(σ) == length(σₙ) == 2 "The provided hyperparameters must be given as vectors of length 2 providing upper and lower bounds."
     @assert issorted(ℓₓ) && issorted(ℓₜ) && issorted(σ) && issorted(σₙ) "The provided ranges for the hyperparameters must be given as (lower, upper)."
 
-    ## Form the design 
-    plan, _ = LHCoptim(num_restarts, length(GaussianProcesses.get_params(gp)), 1000)
-
-    # Scale the design into the provided intervals 
-    new_params = scaleLHC(plan, [(ℓₓ[1], ℓₓ[2]), (ℓₜ[1], ℓₜ[2]), (σ[1], σ[2]), (σₙ[1], σₙ[2])])' # Transpose to get a more efficient order for accessing in a loop
-
+    if num_restarts ≥ 2
+        ## Form the design 
+        plan, _ = LHCoptim(num_restarts, length(GaussianProcesses.get_params(gp)), 1000)
+        # Scale the design into the provided intervals 
+        new_params = scaleLHC(plan, [(ℓₓ[1], ℓₓ[2]), (ℓₜ[1], ℓₜ[2]), (σ[1], σ[2]), (σₙ[1], σₙ[2])])' # Transpose to get a more efficient order for accessing in a loop
+    else
+        new_params = [mean(ℓₓ); mean(ℓₜ); mean(σ); mean(σₙ)] # Use mean of lower/upper bounds when no restarts are required
+    end
+    
     # Optimise
     obj_values = zeros(num_restarts)
     for j = 1:num_restarts
@@ -365,9 +368,9 @@ joint Gaussian process defined by the data `(x, t, u)`. See also
 # Outputs 
 - `gp_setup`: The mutable struct `gp_setup` is updated with the fitted Gaussian process `gp` and the mean vector and Cholesky factor.
 """
-function precompute_gp_mean!(gp_setup::GP_Setup, x, t, u, bootstrap_setup::Bootstrap_Setup)
-    gp_setup.gp = fit_GP(x, t, u, gp_setup)
+function precompute_gp_mean(x, t, u, ℓₓ, ℓₜ, σ, σₙ, nugget, num_restarts, bootstrap_setup::Bootstrap_Setup)
+    gp = fit_GP(x, t, u; ℓₓ, ℓₜ, σ, σₙ, num_restarts)
     _, _, _, _, _, _, Xₛ, _, _ = bootstrap_grid(x, t, bootstrap_setup.bootₓ, bootstrap_setup.bootₜ)
-    gp_setup.μ, gp_setup.L = compute_joint_GP(gp_setup.gp, Xₛ; nugget = gp_setup.nugget)
-    return gp_setup
+    μ, L = compute_joint_GP(gp, Xₛ; nugget = nugget)
+    return gp, μ, L
 end
