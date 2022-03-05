@@ -17,6 +17,7 @@ using LinearAlgebra         # For setting number of threads to prevent StackOver
 using Setfield              # For modifying immutable structs
 include("set_parameters.jl")
 
+
 #####################################################################
 ## Set some global parameters 
 #####################################################################
