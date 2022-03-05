@@ -3,7 +3,7 @@
 #####################################################################
 
 using EquationLearning      # Load our actual package 
-using CSV                   # For loading the density data of Jin et al. (2016).
+using DelimitedFiles        # For loading the density data of Jin et al. (2016).
 using DataFrames            # For conveniently representing the data
 using CairoMakie            # For creating plots
 using LaTeXStrings          # For adding LaTeX labels to plots
@@ -21,7 +21,7 @@ include("set_parameters.jl")
 ## Set some global parameters 
 #####################################################################
 
-fontsize = 10
+fontsize = 23
 colors = [:black, :blue, :red, :magenta, :green]
 alphabet = join('a':'z')
 legendentries = OrderedDict("0.0" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[1]),
@@ -35,13 +35,19 @@ LinearAlgebra.BLAS.set_num_threads(1)
 ## Read in the data from Jin et al. (2016).
 #####################################################################
 
+function prepare_data(filename) # https://discourse.julialang.org/t/failed-to-precompile-csv-due-to-load-error/70146/2
+    data, header = readdlm(filename, ',', header = true)
+    df = DataFrame(data, vec(header))
+    df_new = identity.(df)
+    return df_new
+end
+
 assay_data = Vector{DataFrame}([])
 x_scale = 1000.0 # μm ↦ mm 
 t_scale = 24.0   # hr ↦ day 
 for i = 1:6
     file_name = string("data/CellDensity_", 10 + 2 * (i - 1), ".csv")
-    csv_reader = CSV.File(file_name)
-    dat = DataFrame(csv_reader)
+    dat = prepare_data(file_name)
     dat.Position ./= x_scale
     dat.Dens1 .*= x_scale^2
     dat.Dens2 .*= x_scale^2
@@ -57,7 +63,7 @@ K = 1.7e-3 * x_scale^2 # Cell carrying capacity as estimated from Jin et al. (20
 #####################################################################
 
 assay_plots = Array{Axis}(undef, 3, 2)
-jin_assay_data_fig = Figure()
+jin_assay_data_fig = Figure(fontsize = fontsize)
 
 for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(assay_plots)))
     data = assay_data[k]
@@ -72,7 +78,6 @@ for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(assay_plots)))
     end
     hlines!(assay_plots[i, j], K, color = :black)
     ylims!(assay_plots[i, j], 0.0, 2000.0)
-    EquationLearning.plot_aes!(assay_plots[i, j], fontsize)
 end
 
 Legend(jin_assay_data_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], "Time (d)", orientation = :horizontal, labelsize = fontsize, titlesize = fontsize, titleposition = :left)
@@ -83,7 +88,7 @@ save("figures/jin_assay_data.pdf", jin_assay_data_fig, px_per_unit = 2)
 #####################################################################
 Random.seed!(12991)
 
-jin_assay_data_gp_bands_fig = Figure()
+jin_assay_data_gp_bands_fig = Figure(fontsize = fontsize)
 gp_plots = Array{Axis}(undef, 3, 2)
 
 for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(gp_plots)))
@@ -105,7 +110,6 @@ for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(gp_plots)))
     end
     hlines!(gp_plots[i, j], K, color = :black)
     ylims!(gp_plots[i, j], 0.0, 2000.0)
-    EquationLearning.plot_aes!(gp_plots[i, j], fontsize)
 end
 
 Legend(jin_assay_data_gp_bands_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], "Time (d)", orientation = :horizontal, labelsize = fontsize, titlesize = fontsize, titleposition = :left)
@@ -116,7 +120,7 @@ save("figures/jin_assay_data_gp_plots.pdf", jin_assay_data_gp_bands_fig, px_per_
 #####################################################################
 Random.seed!(12991)
 
-jin_assay_data_gp_bands_fig_spacetime = Figure()
+jin_assay_data_gp_bands_fig_spacetime = Figure(fontsize = fontsize)
 spacetime_plots = Array{Axis}(undef, 3, 2)
 
 for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(spacetime_plots)))
@@ -137,7 +141,6 @@ for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(spacetime_plots)))
         title = "($(alphabet[k])): $(10+2*(k-1)),000 cells per well",
         titlealign = :left)
     heatmap!(spacetime_plots[i, j], X_rng, T_rng, μ; colorrange = (0.0, 2000.0))
-    EquationLearning.plot_aes!(spacetime_plots[i, j], fontsize)
 end
 
 cb = Colorbar(jin_assay_data_gp_bands_fig_spacetime[1:3, 3])
@@ -146,43 +149,108 @@ cb.label = "Cell density (cells/mm²)"
 save("figures/jin_assay_data_spacetime_plots.pdf", jin_assay_data_gp_bands_fig_spacetime, px_per_unit = 2)
 
 #####################################################################
-## Some testing
+## Delay, Fisher-Kolmogorov, 12000
 #####################################################################
 
-x_pde, t_pde, u_pde, x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers, gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params = set_parameters(1, assay_data[1], 1, x_scale, t_scale)
-bootstrap_setup = @set bootstrap_setup.B = 10
+# Extract the parameters 
+x_pde, t_pde, u_pde, x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers, gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params = set_parameters(10, assay_data[2], 2, x_scale, t_scale)
+
+# Calibrate 
+bootstrap_setup = @set bootstrap_setup.B = 20
 bootstrap_setup = @set bootstrap_setup.show_losses = true
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 4
+
+bgp = bootstrap_gp(x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
+delayDensityFigure, diffusionDensityFigure, reactionDensityFigure = density_results(bgp; fontsize = fontsize)
+
+# Perform the full simulation
+T_params = [-2.0, 5.0]
+D_params = [0.0050]
+R_params = [1.7e-3*x_scale^2, 1.4]
+lowers, uppers = [0.9, 0.9, 0.9, 0.9], [1.5, 1.5, 1.5, 1.5]
+bootstrap_setup = @set bootstrap_setup.B = 100
+bootstrap_setup = @set bootstrap_setup.show_losses = false
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 3
+
+bgp = bootstrap_gp(x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params = D_params, R_params = R_params, T_params, verbose = false)
+pde_data = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "data")
+pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
+
+# Plot the density values 
+delayDensityFigure, diffusionDensityFigure, reactionDensityFigure = density_results(bgp; fontsize = fontsize, delay_scales = [T_params[1], T_params[2]/t_scale], diffusion_scales = D_params*x_scale^2/t_scale, reaction_scales = R_params[2]/t_scale)
+delayCurveFigure, diffusionCurveFigure, reactionCurveFigure = curve_results(bgp; fontsize = fontsize, x_scale = x_scale, t_scale = t_scale)
+uvals = LinRange(extrema(u)..., 500)/x_scale^2
+pdeDataFigure = pde_results(x_pde, t_pde, u_pde, pde_data, bgp; fontsize = fontsize, x_scale = x_scale, t_scale = t_scale)
+pdeGPFigure = pde_results(x_pde, t_pde, u_pde, pde_gp, bgp; fontsize = fontsize, x_scale = x_scale, t_scale = t_scale)
+
+#####################################################################
+## Delay, Porous-Fisher, 12000
+#####################################################################
+
+# Extract the parameters 
+x_pde, t_pde, u_pde, x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers, gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params = set_parameters(11, assay_data[2], 2, x_scale, t_scale)
+
+# Calibrate 
+bootstrap_setup = @set bootstrap_setup.B = 5
+bootstrap_setup = @set bootstrap_setup.show_losses = true
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 4
+
+bgp = bootstrap_gp(x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
+delayDensityFigure, diffusionDensityFigure, reactionDensityFigure = density_results(bgp; fontsize = fontsize)
+
+# Perform the full simulation
+T_params = [-2.0, 5.0]
+D_params = [1.7e-3*x_scale^2, 0.01]
+R_params = [1.7e-3*x_scale^2, 1.4]
+lowers, uppers = [0.9, 0.9, 0.9, 0.9], [1.5, 1.5, 1.5, 1.5]
+bootstrap_setup = @set bootstrap_setup.B = 3
+bootstrap_setup = @set bootstrap_setup.show_losses = false
 bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 1
 
-bgp = bootstrap_gp(x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params)
-delayDensityFigure, diffusionDensityFigure, reactionDensityFigure = density_results(bgp; fontsize = 23)
-delayCurvePlots, diffusionCurvePlots, reactionCurvePlots = curve_results(bgp; fontsize = 23)
-solns_all = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "data")
+bgp = bootstrap_gp(x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params = D_params, R_params = R_params, T_params, verbose = false)
+pde_data = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "data")
+pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
 
+# Plot the density values 
+delayDensityFigure, diffusionDensityFigure, reactionDensityFigure = density_results(bgp; fontsize = fontsize, delay_scales = [T_params[1], T_params[2]/t_scale], diffusion_scales = D_params[2]*x_scale^2/t_scale, reaction_scales = R_params[2]/t_scale)
+delayCurveFigure, diffusionCurveFigure, reactionCurveFigure = curve_results(bgp; fontsize = fontsize, x_scale = x_scale, t_scale = t_scale)
+uvals = LinRange(extrema(u)..., 500)/x_scale^2
+pdeDataFigure = pde_results(x_pde, t_pde, u_pde, pde_data, bgp; fontsize = fontsize, x_scale = x_scale, t_scale = t_scale)
+pdeGPFigure = pde_results(x_pde, t_pde, u_pde, pde_gp, bgp; fontsize = fontsize, x_scale = x_scale, t_scale = t_scale)
 
-colors = [:black, :blue, :red, :magenta, :green]
-level = 0.05
-fontsize = 23
+#####################################################################
+## Delay, Affine Diffusion, 12000
+#####################################################################
 
-## Setup
-N = length(bgp.pde_setup.meshPoints)
-M = length(bgp.pde_setup.δt)
-@assert length(colors) == M "There must be as many provided colors as there are unique time values."
-soln_vals_mean = zeros(N, M)
-soln_vals_lower = zeros(N, M)
-soln_vals_upper = zeros(N, M)
-for j = 1:M
-    soln_vals_mean[:, j], soln_vals_lower[:, j], soln_vals_upper[:, j] = compute_ribbon_features(solns_all[:, :, j]; level = level)
-end
+# Extract the parameters 
+x_pde, t_pde, u_pde, x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers, gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params = set_parameters(12, assay_data[2], 2, x_scale, t_scale)
 
-# Initiate axis 
-pdeSolutionPlots_BGP = Figure(fontsize = fontsize)
-ax = Axis(pdeSolutionPlots_BGP[1, 1], xlabel = L"x", ylabel = L"u(x, t)")
+# Calibrate 
+bootstrap_setup = @set bootstrap_setup.B = 5
+bootstrap_setup = @set bootstrap_setup.show_losses = true
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 4
+optim_setup = Optim.Options(f_reltol = 1e-4, x_reltol = 1e-4, g_reltol = 1e-4, outer_f_reltol = 1e-4, outer_x_reltol = 1e-4, outer_g_reltol = 1e-4)
 
-# Plot the lines, ribbons, and data 
-@views for j in 1:M 
-    lines!(ax, bgp.pde_setup.meshPoints, soln_vals_mean[:, j], color = colors[j])
-    band!(ax, bgp.pde_setup.meshPoints, soln_vals_upper[:, j], soln_vals_lower[:, j], color = (colors[j], 0.35))
-    scatter!(ax, x_pde[t_pde .== bgp.pde_setup.δt[j]], u_pde[t_pde .== bgp.pde_setup.δt[j]], color = colors[j], markersize = 7)
-end
+bgp = bootstrap_gp(x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
+delayDensityFigure, diffusionDensityFigure, reactionDensityFigure = density_results(bgp; fontsize = fontsize, delay_resolution = (1200, 800), diffusion_resolution = (1200, 800))
+
+# Perform the full simulation
+T_params = [-3.0, 5.5]
+D_params = [1.7e-3*x_scale^2, 0.0084792, 0.07]
+R_params = [1.7e-3*x_scale^2, 1.7]
+lowers, uppers = [0.9, 0.9, 0.9, 0.9, 0.9, 0.9], [1.5, 1.5, 1.5, 1.5, 1.5, 1.5]
+bootstrap_setup = @set bootstrap_setup.B = 100
+bootstrap_setup = @set bootstrap_setup.show_losses = false
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 1
+
+bgp = bootstrap_gp(x, t, u, T, D, D′, R, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params = D_params, R_params = R_params, T_params, verbose = false)
+pde_data = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "data")
+pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
+
+# Plot the density values 
+delayDensityFigure, diffusionDensityFigure, reactionDensityFigure = density_results(bgp; fontsize = fontsize, delay_scales = [T_params[1], T_params[2]/t_scale], diffusion_scales = D_params[2]*x_scale^2/t_scale, reaction_scales = R_params[2]/t_scale, delay_resolution = (1200, 800), diffusion_resolution = (1200, 800))
+delayCurveFigure, diffusionCurveFigure, reactionCurveFigure = curve_results(bgp; fontsize = fontsize, x_scale = x_scale, t_scale = t_scale)
+uvals = LinRange(extrema(u)..., 500)/x_scale^2
+pdeDataFigure = pde_results(x_pde, t_pde, u_pde, pde_data, bgp; fontsize = fontsize, x_scale = x_scale, t_scale = t_scale)
+pdeGPFigure = pde_results(x_pde, t_pde, u_pde, pde_gp, bgp; fontsize = fontsize, x_scale = x_scale, t_scale = t_scale)
 
