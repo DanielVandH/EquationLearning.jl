@@ -7,32 +7,33 @@
 ## definitions.
 
 ## The following structs are define:
-##  - BootResults: A struct for storing bootstrapping results.
 ##  - GP_Setup: A struct that defines the setup for a Gaussian process. 
 ##      A constructor is also defined.
 ##  - Bootstrap_Setup: A struct for defining the setup for bootstrapping.
 ##      A constructor is also defined.
-##  - PDE_Setuo: A struct for defining the configuration used for PDEs.
+##  - PDE_setup: A struct for defining the configuration used for PDEs.
 ##      A constructor is also defined.
+##  - BootResults: A struct for storing bootstrapping results.
+##
 #####################################################################
 
 """
-    mutable struct GP_Setup{T}
+    GP_Setup
 
 Setup for the Gaussian processes. See also [`fit_GP`](@ref) and [`bootstrap_gp`](@ref).
 
 # Fields 
-- `ℓₓ::Vector{T}`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₓ` (defined on a log scale).
-- `ℓₜ::Vector{T}`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₜ` (defined on a log scale).
-- `σ::Vector{T}`: A 2-vector giving the lower and upper bounds for the initial estimates of `σ` (defined on a log scale).
-- `σₙ::Vector{T}`: A 2-vector giving the lower and upper bounds for the initial estimates of `σₙ` (defined on a log scale).
+- `ℓₓ::Vector{Float64}`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₓ` (defined on a log scale).
+- `ℓₜ::Vector{Float64}`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₜ` (defined on a log scale).
+- `σ::Vector{Float64}`: A 2-vector giving the lower and upper bounds for the initial estimates of `σ` (defined on a log scale).
+- `σₙ::Vector{Float64}`: A 2-vector giving the lower and upper bounds for the initial estimates of `σₙ` (defined on a log scale).
 - `GP_Restarts::Int`: Number of times to restart the optimiser. See [`opt_restart!`](@ref).
-- `μ::Union{Missing, Vector{T}}`: Either `Nothing` or a stored mean vector for the Gaussian process. 
-- `L::Union{Missing, LowerTriangular{T}}`: Either `Nothing` or a stored Cholesky factor for the Gaussian process.
-- `nugget::T`: A term to add to the correlation matrix to force the covariance matrix to be symmetric positive definite.
+- `μ::Union{Missing, Vector{Float64}}`: Either `Nothing` or a stored mean vector for the Gaussian process. 
+- `L::Union{Missing, LowerTriangular{Float64}}`: Either `Nothing` or a stored Cholesky factor for the Gaussian process.
+- `nugget::Float64`: A term to add to the correlation matrix to force the covariance matrix to be symmetric positive definite.
 - `gp::Union{Missing, GPBase}`: Either `Nothing` or a stored Gaussian process. See also [`fit_GP`](@ref).
 """
-struct GP_Setup # We use mutable so that we can update it with the found μ, L, gp if we want
+struct GP_Setup 
     ℓₓ::Vector{Float64}
     ℓₜ::Vector{Float64}
     σ::Vector{Float64}
@@ -85,8 +86,8 @@ A struct defining some arguments for [`bootstrap_gp`](@ref).
 - `τ::Tuple{Float64, Float64}`: A tuple of the form `(τ₁, τ₂)` which gives the tolerance `τ₁` for thresholding `f` and `τ₂` for thresholding `fₜ`. See also [`data_thresholder`](@ref).
 - `Optim_Restarts::Int`: Number of times to restart the optimiser for the nonlinear least squares problem. See also [`learn_equations!`](@ref).
 - `constrained::Bool`: `true` if the optimisation problems should be constrained, and `false` otherwise.
-- `obj_scale_GLS::Float64`: The amount by which the GLS loss function should be scaled.
-- `obj_scale_PDE::Float64`: The amount by which the PDE loss function should be scaled.
+- `obj_scale_GLS::Function`: The function determining how the GLS loss function should be scaled.
+- `obj_scale_PDE::Function`: The function determining how the PDE loss function should be scaled.
 - `show_losses::Bool`: `true` if the loss function should be printed to the REPL throughout the optimisation process, and `false` otherwise.
 """
 struct Bootstrap_Setup
@@ -113,8 +114,8 @@ A constructor for [`Bootstrap_Setup`](@ref) for some spatial data `x` and tempor
 - `τ = (0.0, 0.0)`.
 - `Optim_Restarts = 5`.
 - `constrained = false`.
-- `obj_scale_GLS = 1.0`.
-- `obj_scale_PDE = 1.0`.
+- `obj_scale_GLS = x -> x`.
+- `obj_scale_PDE = x -> x`.
 - `show_losses = false`.
 """
 function Bootstrap_Setup(x::AbstractVector, t::AbstractVector;
@@ -124,15 +125,13 @@ function Bootstrap_Setup(x::AbstractVector, t::AbstractVector;
     τ = (0.0, 0.0),
     Optim_Restarts = 5,
     constrained = false,
-    obj_scale_GLS = 1.0,
-    obj_scale_PDE = 1.0,
+    obj_scale_GLS = x -> x,
+    obj_scale_PDE = x -> x,
     show_losses = false)
     @assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
     @assert B > 0 "The number of bootstrap samples must be a positive integer."
     @assert all(0 .≤ τ .≤ 1.0) "The threshold tolerances in τ must be between 0.0 and 1.0."
     @assert Optim_Restarts > 0 "The number of restarts mus tbe a positive integer."
-    @assert obj_scale_GLS > 0.0 "The scale for the GLS loss must be positive."
-    @assert obj_scale_PDE > 0.0 "The scale for the PDE loss msut be positive."
     return Bootstrap_Setup(bootₓ, bootₜ, B, τ, Optim_Restarts, constrained, obj_scale_GLS, obj_scale_PDE, show_losses)
 end
 
@@ -170,7 +169,6 @@ A constructor for [`PDE_Setup`](@ref) for some spatial data `x` and temporal dat
 - `finalTime = maximum(t)`.
 - `δt = finalTime / 4.0`.
 - `alg = nothing`.
-- `ICType = "data"`.
 """
 function PDE_Setup(x, t;
     meshPoints = LinRange(extrema(x)..., 500),
@@ -178,8 +176,7 @@ function PDE_Setup(x, t;
     RHS = [0.0, -1.0, 0.0],
     finalTime = maximum(t),
     δt = finalTime / 4.0,
-    alg = nothing,
-    ICType = "data")
+    alg = nothing)
     @assert length(LHS) == length(RHS) == 3 "The provided boundary condition vectors LHS and RHS must be of length 3."
     @assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
     @assert ICType ∈ ["data", "gp"]
@@ -189,7 +186,7 @@ function PDE_Setup(x, t;
             error("Length of δt must be the same as the number of unique time points in t.")
         end
     end
-    return PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg, ICType)
+    return PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg)
 end
 
 """
@@ -214,8 +211,9 @@ Structure for storing bootstrapping results. See [`bootstrap_gp`](@ref).
 - `D_params`: Parameters for the diffusion function.
 - `R_params`: Parameters for the reaction function. 
 - `T_params`: Parameters for the delay function.
-- `μ`: The mean vector for the joint Gaussian process. See also [`compute_joint_GP`](@ref).
-- `L`: The Cholesky factor for the joint Gaussian process. See also [`compute_joint_GP`](@ref).
+- `gp_setup`: The GP setup used; see [`GP_Setup`](@ref).
+- `bootstrap_setup`: The bootstrap setup used; see [`bootstrap_setup`](@ref).
+- `pde_setup`: The PDE setup used; see [`pde_setup`](@ref).
 """
 struct BootResults
     delayBases::Array{Float64}
