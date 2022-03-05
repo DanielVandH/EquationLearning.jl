@@ -1,3 +1,10 @@
+#####################################################################
+## Script description: synthetic_data.jl
+##
+## This script defines one function, generate_data, for generating synthetic data.
+##
+#####################################################################
+
 """
     generate_data(x₀, u₀, T, D, R, α, β, γ, δt, finalTime; <keyword arguments>)
 
