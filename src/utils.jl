@@ -9,6 +9,7 @@
 ##      closest element in the array to the point.
 ##  - data_thresholder: Gives indices corresponding to reliable data 
 ##      points.
+##  - compute_ribbon_features: For a given vector x, computes the mean values and lower/upper bounds for a ribbon plot.
 ##
 #####################################################################
 
