@@ -192,7 +192,6 @@ For example, we may have 3 replicates of some data which we would easily use in 
 together for obtaining the solutions.
 """
 function boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.0, ICType = "data")
-    todo"Do some further analysis to find the best ODE algorithm to use."
     @assert 0 < prop_samples ≤ 1.0 "The values of prop_samples must be in (0, 1]."
     @assert ICType ∈ ["data", "gp"]
     nodes, weights = gausslegendre(5)

@@ -152,7 +152,7 @@ function set_parameters(n, dat, dat_idx, x_scale, t_scale)
     meshPoints = LinRange(extrema(x)..., 500)
     pde_setup = EquationLearning.PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg)
     ## Other and return 
-    optim_setup = Optim.Options(f_reltol = 1e-4, x_reltol = 1e-4, g_reltol = 1e-4, outer_f_reltol = 1e-4, outer_x_reltol = 1e-4, outer_g_reltol = 1e-4)
+    optim_setup = Optim.Options(iterations = 10, f_reltol = 1e-4, x_reltol = 1e-4, g_reltol = 1e-4, outer_f_reltol = 1e-4, outer_x_reltol = 1e-4, outer_g_reltol = 1e-4)
     if n ∈ 1:6
         return x_pde, t_pde, u_pde, x, t, u, T, D, D′, R, α₀, β₀, γ₀,
         lowers, uppers, gp_setup, bootstrap_setup, optim_setup,
