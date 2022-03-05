@@ -14,6 +14,7 @@
 ##  - compute_joint_GP: Computes the arrays required for the joint 
 ##      Gaussian process [f, fₜ, fₓ, fₓₓ]. 
 ##  - draw_gp!: Draw a random sample from a Gaussian process.
+##  - precompute_gp_mean: Computes tthe Gaussian process using fit_GP and then computes the joint GP mean vector and Cholesky factor using compute_joint_GP.
 ##
 #####################################################################
 
@@ -81,7 +82,6 @@ Fits a Gaussian process with data `(x, t)` using the targets in `u`.
 - `σ = log.([1e-1, 2std(u)])`: A 2-vector giving the lower and upper bounds for the initial estimates of `σ` (defined on a log scale).
 - `σₙ = log.([1e-5, 2std(u)])`: A 2-vector giving the lower and upper bounds for the initial estimates of `σₙ` (defined on a log scale).
 - `num_restarts = 50`: Number of times to restart the optimiser. See [`opt_restart!`](@ref).
-
 
 # Outputs 
 - `gp`: The fitted Gaussian process.
@@ -313,18 +313,31 @@ function compute_joint_GP(gp::GPBase, X̃; nugget = 1e-10)
 
     # Compute the covariance matrix and Cholesky factor 
     Σ = Symmetric(Σ₂₂ - Σ₂₁ * (Σ₁₁ \ Σ₁₂))
-    local L # So it's kept outside of try
-    try
-        Σ, chol = GaussianProcesses.make_posdef!(Σ; nugget = nugget)
-        L = chol.L
-    catch
-        Σvar = diag(Σ)
-        for i = 1:size(Σ, 2)
-            Σ[i, i] += nugget * Σvar[i] # add nugget to correlation matrix instead!
-        end
-        Σ, chol = GaussianProcesses.make_posdef!(Σ; nugget = nugget)
-        L = chol.L
+
+    # Regularise 
+    f_idx = 1:nₓnₜ
+    fₜ_idx = (nₓnₜ+1):(2nₓnₜ)
+    fₓ_idx = (2nₓnₜ+1):(3nₓnₜ)
+    fₓₓ_idx = (3nₓnₜ+1):(4nₓnₜ)
+    @views tr11 = tr(Σ[f_idx, f_idx])
+    @views tr22 = tr(Σ[fₜ_idx, fₜ_idx])
+    @views tr33 = tr(Σ[fₓ_idx, fₓ_idx])
+    @views tr44 = tr(Σ[fₓₓ_idx, fₓₓ_idx])
+    tr22_11 = tr22/tr11 
+    tr33_11 = tr33/tr11 
+    tr44_11 = tr44/tr11
+    η₁ = nugget 
+    η₂ = tr22_11*nugget 
+    η₃ = tr33_11*nugget
+    η₄ = tr44_11*nugget
+    for j = 1:nₓnₜ
+        Σ[j, j] += η₁
+        Σ[j+nₓnₜ, j+nₓnₜ] += η₂
+        Σ[j+2nₓnₜ, j+2nₓnₜ] += η₃ 
+        Σ[j+3nₓnₜ, j+3nₓnₜ] += η₄
     end
+    chol = cholesky(Σ)
+    L = chol.L
 
     # Return 
     return μ, L
@@ -352,7 +365,8 @@ The random sample is updated in-place into `F`.
 end
 
 """
-    precompute_gp_mean!(gp_setup::GP_Setup, x, t, u, bootstrap_setup::Bootstrap_Setup)   
+    precompute_gp_mean(x, t, u, ℓₓ, ℓₜ, σ, σₙ, nugget, num_restarts, bootstrap_setup::Bootstrap_Setup)
+
 
 Computes the Gaussian process and corresponding mean vector and Cholesky factor for a 
 joint Gaussian process defined by the data `(x, t, u)`. See also 
@@ -362,12 +376,19 @@ joint Gaussian process defined by the data `(x, t, u)`. See also
 - `x`: The spatial data. 
 - `t`: The temporal data.
 - `u`: The targets corresponding to `(x, t)`.
-- `gp_setup::GP_Setup`: A [`GP_Setup`](@ref) struct for setting up the Gaussian process parameters. 
+- `ℓₓ`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₓ` (defined on a log scale).
+- `ℓₜ`: A 2-vector giving the lower and upper bounds for the initial estimates of `ℓₜ` (defined on a log scale).
+- `σ`: A 2-vector giving the lower and upper bounds for the initial estimates of `σ` (defined on a log scale).
+- `σₙ`: A 2-vector giving the lower and upper bounds for the initial estimates of `σₙ` (defined on a log scale).
+- `nugget`: The term to add to the diagonals of the covariance matrix in case the matrix is not positive definite.
+- `num_restarts = 50`: Number of times to restart the optimiser. See [`opt_restart!`](@ref).
 - `bootstrap_setup::Bootstrap_Setup`: A [`Bootstrap_Setup`](@ref) struct for defining the bootstrapping grid.
 
 # Outputs 
-- `gp_setup`: The mutable struct `gp_setup` is updated with the fitted Gaussian process `gp` and the mean vector and Cholesky factor.
-"""
+- `gp_setup`: The fitted Gaussian process.
+- `μ`: The mean vector for the joint Gaussian proces.
+- `L`: The Cholesky factor for the joint Gaussian process.
+`"""
 function precompute_gp_mean(x, t, u, ℓₓ, ℓₜ, σ, σₙ, nugget, num_restarts, bootstrap_setup::Bootstrap_Setup)
     gp = fit_GP(x, t, u; ℓₓ, ℓₜ, σ, σₙ, num_restarts)
     _, _, _, _, _, _, Xₛ, _, _ = bootstrap_grid(x, t, bootstrap_setup.bootₓ, bootstrap_setup.bootₜ)
