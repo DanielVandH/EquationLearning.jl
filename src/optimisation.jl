@@ -1,10 +1,21 @@
+#####################################################################
+## Script description: optimisation.jl
+##
+## This script contains certain functions used for estimating parameters.
+##
+## The following functions are defined:
+##  - loss_function: Computes the loss function. 
+##  - learn_equations!: Estimates the parameter values.
+##
+#####################################################################
+
 """
     loss_function(αβγ; <keyword arguments>)
 
-Computes the loss function for the nonlinear least squares problem at `αβγ`.
+Computes the loss function at `αβγ`.
 
 # Arguments 
-- `αβγ`: The parameter values for the delay, diffusion, and reaction terms, given in the form `[α; β; γ]`.
+- `αβγ`: The parameter values for the delay, diffusion, and reaction terms, given in the form `[α, β, γ]`.
 
 # Keyword Arguments
 - `u`: The density data used for fitting the Gaussian process. See [`fit_GP`](@ref).
@@ -42,14 +53,15 @@ Computes the loss function for the nonlinear least squares problem at `αβγ`.
 - `MSE`: Cache array for storing the individual squared errors.
 - `obj_scale_GLS`: Scale to divide the `GLS` loss by.
 - `obj_scale_PDE`: Scale to divide the `PDE` loss by.
-- `nodes`: Gauss-Legendre quadrature nodes.
-- `weights`: Gauss-Legendre quadrature weights.
+- `glnodes`: Gauss-Legendre quadrature nodes.
+- `glweights`: Gauss-Legendre quadrature weights.
 - `maxf`: The maximum value of `f`.
 - `D_params`: Extra parameters for the diffusion function.
 - `R_params`: Extra parameters for the reaction function. 
 - `T_params`: Extra parameters for the delay function.
 - `iterate_idx`: Vector used for indexing the values in `u` corresponding to different times.
 - `closest_idx`: Vector used for indexing the points in the PDE's meshpoints that are closest to the actual spatial data used for fitting the Gaussian process.
+- `show_losses`: Whether to print the individual loss functions to the REPL during the optimisation process.
 - `σₙ`: The standard deviation of the observation noise of the Gaussian process.
 - `PDEkwargs...`: The keyword arguments to use in `DifferentialEquations.solve`.
 
@@ -60,10 +72,9 @@ There are two types of loss functions currently considered, namely `"GLS"` and `
 
 For `"GLS"`, the loss function is (see Lagergren et al. (2020): https://doi.org/10.1098/rspa.2019.0800)
 
-`` \\frac{1}{NM}\\sum_{i=1}^N\\sum_{j=1}^M \\left(\\frac{\\hat u_{ij} - u_{ij}}{|\\hat u_{ij}|^\\delta}\\right)^2 ``,
+`` \\frac{1}{NM}\\sum_{i=1}^N\\sum_{j=1}^M \\left(\\frac{\\hat u_{ij} - u_{ij}}{\\σ_{n}\\right)^2 ``,
 
-with values of ``\\hat u_{ij}`` less than `10⁻⁴` in magnitude replaced by `1` in the denominator. If the ODE solver returns an error for the given parameter 
-values, `∞` is added to the loss function as a penalty.
+If the ODE solver returns an error for the given parameter values, `∞` is added to the loss function as a penalty.
 """
 function loss_function(αβγ; u,
     f, fₓ, fₓₓ, fₜ,
@@ -129,9 +140,9 @@ function loss_function(αβγ; u,
         end
     end
     if show_losses
-        @printf "Scaled GLS loss contribution: %.6g. Scaled PDE loss contribution: %.6g.\n" GLSC PDEC 
+        @printf "Scaled GLS loss contribution: %.6g. Scaled PDE loss contribution: %.6g.\n" GLSC PDEC
     end
-    return total_loss
+    return log(total_loss)
 end
 
 """
@@ -246,12 +257,15 @@ function learn_equations!(x, t, u,
     end
 
     min_obj_idx = findmin(obj_values)[2]
-    fit_model = fit_fnc(stacked_params[:, min_obj_idx])
-    final_params = fit_model.minimizer
-
-    # Allocate parameter values
-    α .= @views final_params[1:tt]
-    β .= @views final_params[(tt+1):(tt+d)]
-    γ .= @views final_params[(tt+d+1):(tt+d+r)]
-    return nothing
+    try
+        fit_model = fit_fnc(stacked_params[:, min_obj_idx])
+        final_params = fit_model.minimizer
+        # Allocate parameter values
+        α .= @views final_params[1:tt]
+        β .= @views final_params[(tt+1):(tt+d)]
+        γ .= @views final_params[(tt+d+1):(tt+d+r)]
+        return false
+    catch
+        return true
+    end
 end
