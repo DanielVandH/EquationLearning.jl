@@ -11,6 +11,8 @@
 ##  - compute_initial_conditions: Computes initial conditions to use.
 ##  - compute_valid_pde_indices: Checks which bootstrap iterates will 
 ##      lead to a solution that exists.
+##  - boot_pde_solve: Solve the PDEs for each bootstrap iterate.
+##
 #####################################################################
 
 """
@@ -81,6 +83,7 @@ Computes initial conditions for the bootstrap iterates in `bgp`. See also [`boot
 - `ICType`: The type of initial condition to use. If `ICType == "data"` then the initial condition is simply a spline through the data, and if `ICType == "gp"` then the initial condition is a sample of the underlying Gaussian process in `bgp.gp`.
 - `bgp::BootResults`: The bootstrapping results of type [`BootResults`](@ref). See [`bootstrap_gp`](@ref).
 - `N`: The number of mesh points.
+- `B`: The number of bootstrap iterations.
 - `meshPoints`: The spatial mesh.
 
 # Outputs 
@@ -110,17 +113,17 @@ end
 Method for calling [`compute_initial_conditions`] when providing only `bgp` and the data. 
 """
 function compute_initial_conditions(x_pde, t_pde, u_pde, bgp::BootResults, ICType)
-    todo"Just make this the main function and remove the more complicated method."
     return compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp, length(bgp.pde_setup.meshPoints), bgp.bootstrap_setup.B, bgp.pde_setup.meshPoints)
 end
 
 """
-    compute_valid_pde_indices(u, num_t, num_u, B, tr, dr, rr)
+    compute_valid_pde_indices(bgp, u_pde, num_t, num_u, B, tr, dr, rr, nodes, weights, D_params, R_params, T_params)
 
 Computes the indices corresponding to the bootstrap samples which give valid PDE solutions. The check is done by 
 ensuring that the delay and diffusion values are strictly nonnegative, and the area under the reaction curve is nonnegative.
 
 # Arguments 
+- `bgp::BootResults`: The bootstrapping results of type [`BootResults`](@ref). See [`bootstrap_gp`](@ref).
 - `u_pde`: The density data used for fitting the original Gaussian process. See also [`fit_GP`](@ref).
 - `num_t`: The number of time values to use for checking the validity of the delay function values. 
 - `num_u`: The number of density values to use for checking the validity of the diffusion function values.
@@ -137,7 +140,7 @@ ensuring that the delay and diffusion values are strictly nonnegative, and the a
 # Outputs 
 - `idx`: The vector of indices corresponding to valid bootstrap samples.
 """
-function compute_valid_pde_indices(bgp, u_pde, num_t, num_u, B, tr, dr, rr, nodes, weights, D_params, R_params, T_params)
+function compute_valid_pde_indices(bgp::BootResults, u_pde, num_t, num_u, B, tr, dr, rr, nodes, weights, D_params, R_params, T_params)
     idx = Array{Int64}(undef, 0)
     u_vals = range(minimum(bgp.gp.y), maximum(bgp.gp.y), length = num_u)
     t_vals = collect(range(minimum(bgp.Xₛⁿ[2, :]), maximum(bgp.Xₛⁿ[2, :]), length = num_t))
@@ -145,8 +148,8 @@ function compute_valid_pde_indices(bgp, u_pde, num_t, num_u, B, tr, dr, rr, node
     Duv = zeros(num_u, 1)
     max_u = maximum(u_pde)
     @inbounds @views for j = 1:B
-        Duv .= bgp.D.(u_vals, Ref(dr[:, j]), D_params)
-        Tuv .= bgp.T.(t_vals, Ref(tr[:, j]), T_params)
+        Duv .= bgp.D.(u_vals, Ref(dr[:, j]), Ref(D_params))
+        Tuv .= bgp.T.(t_vals, Ref(tr[:, j]), Ref(T_params))
         Reaction = u -> bgp.R(max_u / 2 * (u + 1), rr[:, j], R_params) # missing a max_u/2 factor in front for this new integral, but thats fine since it doesn't change the sign
         Ival = dot(weights, Reaction.(nodes))
         if all(≥(0), Tuv) && all(≥(0), Duv) && Ival[1] ≥ 0.0 # Safeguard... else the solution never finishes!
@@ -162,12 +165,11 @@ end
 Method for calling [`compute_valid_pde_indices`] when providing only `bgp` and the data. 
 """
 function compute_valid_pde_indices(u_pde, num_t, num_u, nodes, weights, bgp::BootResults)
-    todo"Just make this the main function and remove the more complicated method."
     return compute_valid_pde_indices(bgp, u_pde, num_t, num_u, bgp.bootstrap_setup.B, bgp.delayBases, bgp.diffusionBases, bgp.reactionBases, nodes, weights, bgp.D_params, bgp.R_params, bgp.T_params)
 end
 
 """
-    boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.0)
+    boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.0, ICType = "data")
 
 Solve the PDEs corresponding to the bootstrap iterates in `bgp` obtained from [`bootstrap_gp`](@ref). 
 
@@ -179,6 +181,7 @@ Solve the PDEs corresponding to the bootstrap iterates in `bgp` obtained from [`
 
 # Keyword Arguments 
 - `prop_samples = 1.0`: The proportion of bootstrap samples to compute teh corresponding PDE soluton to.
+- `ICType = "data"`: The type of initial condition to use. Should be either `"data"` or `"gp"`.
 
 # Outputs 
 - `solns_all`: The solutions to the PDEs over the mesh points at each time value.
