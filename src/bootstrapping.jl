@@ -69,6 +69,32 @@ end
 Creates cache arrays and computes certain parameters 
 that are used for the bootstrapping component. See [`bootstrap_helper`](@ref) for details and
 [`bootstrap_gp`](@ref) for its use. 
+
+# Arguments 
+- `nₓnₜ`: The number of test data points.
+- `α₀`: Initial values for the delay coefficients. (Not actually used anywhere other than for computing the number of delay parameters and checking arguments.)
+- `β₀`: Initial values for the diffusion coefficients. (Not actually used anywhere other than for computing the number of diffusion parameters and checking arguments.)
+- `γ₀`: Initial values for the reaction coefficients. (Not actually used anywhere other than for computing the number of reaction parameters and checking arguments.)
+- `B`: Number of bootstrap iterations being performed.
+
+# Outputs 
+- `f`: Cache array for `f(x, t)`.
+- `fₜ`: Cache array for `fₜ(x, t)`.
+- `fₓ`: Cache array for `fₓ(x, t)`.
+- `fₓₓ`: Cache array for `fₓₓ(x, t)`.
+- `ffₜfₓfₓₓ`: Cache array for the stacked vector `[f; fₜ; fₓ; fₓₓ]`.
+- `f_idx`: Indices for extracting `f(x, t)` from `ffₜfₓfₓₓ` from the random samples. 
+- `fₜ_idx`: Indices for extracting `fₜ(x, t)` from `ffₜfₓfₓₓ` from the random samples.
+- `fₓ_idx`: Indices for extracting `fₓ(x, t)` from `ffₜfₓfₓₓ` from the random samples.
+- `fₓₓ_idx`: Indices for extracting `fₓₓ(x, t)` from `ffₜfₓfₓₓ` from the random samples.
+- `tt`: Number of delay parameters.
+- `d`: Number of diffusion parameters.
+- `r`: Number of reaction parameters.
+- `delayBases`: Matrix for storing the computed delay coefficients. Each column represents a set of parameters.
+- `diffusionBases`: Matrix for storing the computed diffusion coefficients. Each column represents a set of parameters.
+- `reactionBases`: Matrix for storing the computed reaction coefficients. Each column represents a set of parameters.
+- `ℓz`: Cache array for storing the result of the matrix-vector product `Lz`, where `L` is the Cholesky factor and `z` is a random sample from `N(0, I)`.
+- `zvals`: Matrix for storing the drawn `z` values from `N(0, I)`.
 """
 function preallocate_bootstrap(nₓnₜ, α₀, β₀, γ₀, B)
     # Function values
@@ -109,6 +135,40 @@ end
 
 Creates cache arrays and computes certain parameters that are used for the bootstrapping component. 
 See [`bootstrap_helper`](@ref) for details and [`bootstrap_gp`](@ref) for its use. 
+
+# Arguments 
+- `num_restarts`: Number of times to restart the optimisation problem when solving the nonlinear least squares problems. See [`learn_equations!`](@ref).
+- `meshPoints`: The spatial mesh used for solving the PDEs.
+- `δt`: A number or a vector specifying the spacing between returned times for the solutions to the PDEs or specific times, respectively.
+- `finalTime`: The final time to give the solution to the PDEs at.
+- `Xₛ`: The test matrix for the bootstrapping grid data.
+- `tt`: Number of delay parameters.
+- `d`: Number of diffusion parameters.
+- `r`: Number of reaction parameters.
+- `nₓnₜ`: The number of test data points.
+- `gp`: The fitted Gaussian process. See [`fit_GP`](@ref).
+- `lowers`: Lower bounds for the delay, diffusion, and reaction parameters (in that order) for constructing the Latin hypercube design (only for the grid, these do not constrain the parameter values).
+- `uppers`: Upper bounds for the delay, diffusion, and reaction parameters (in that order) for constructing the Latin hypercube design (only for the grid, these do not constrain the parameter values).
+
+# Outputs
+- `obj_values`: Cache array for storing the objective function values at each optimisation restart.
+- `stacked_params`: Matrix which stores parameter values at each optimisation restart. The columns take the form `[α; β; γ]`.
+- `N`: The length of `meshPoints`.
+- `Δx`: The spacing between each point in `meshPoints`.
+- `V`: The volume of each cell in the spatial mesh.
+- `Du`: Cache array for computing `D(u)`.
+- `D′u`: Cache array for computing `D′(u)`.
+- `Ru`: Cache array for computing `R(u)`.
+- `TuP`: Cache array for storing the values of the delay function at the unscaled times (for the `"PDE"` loss function).
+- `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"PDE"` loss function).
+- `D′uP`: Cache array for storing the values of the derivative of the diffusion function at the estimated density values (for the `"PDE"` loss function).
+- `RuP`: Cache array for storing the values of the reaction function at the estimated density values (for the `"PDE"` loss function).
+- `RuN`: For storing values of the reaction function at Gauss-Legendre quadrature nodes.
+- `SSEArray`: Cache array for storing the solutions to the PDEs.
+- `Xₛ₀`: Logical array used for accessing the values in `Xₛ` corresponding to the initial condition.
+- `IC1`: Cache array for storing the initial spline over the initial data.
+- `initialCondition`: Cache array for storing the initial condition over `meshPoints`.
+- `MSE`: Cache array for storing the individual squared errors.
 """
 function preallocate_eqlearn(num_restarts, meshPoints, δt, finalTime, Xₛ, tt, d, r, nₓnₜ, gp, lowers, uppers)
     @assert length(lowers) == length(uppers) == tt + d + r
@@ -265,19 +325,26 @@ function bootstrap_helper(x, t, α₀, β₀, γ₀, lowers, uppers, gp_setup::G
 end
 
 """
-    bootstrap_gp(x::T1, t::T1, u::T2, T::T2, D::T2, D′::T2, R::T2, α₀::T1, β₀::T1, γ₀::T1, lowers::T1, uppers::T1; <keyword arguments>)
+    bootstrap_gp(x::T1, t::T1, u::T1,
+        T::Function, D::Function, D′::Function, R::Function,
+        α₀::T1, β₀::T1, γ₀::T1, lowers::T1, uppers::T1;
+        gp_setup::GP_Setup = GP_Setup(u),
+        bootstrap_setup::Bootstrap_Setup = Bootstrap_Setup(x, t, u),
+        optim_setup::Optim.Options = Optim.Options(),
+        pde_setup::PDE_Setup = PDE_Setup(x),
+        D_params = nothing, R_params = nothing, T_params = nothing, PDEkwargs...) where {T1<:AbstractVector}
 
 Perform bootstrapping on the data `(x, t, u)` to learn the appropriate functional forms of 
-`(T, D, R)` with uncertainty. The type signatures `T1` and `T2` refer to `AbstractVector`s and `Function`s, respectively.
+`(T, D, R)` with uncertainty. 
 
 # Arguments 
 - `x::T1`: The spatial data.
 - `t::T1`: The temporal data.
 - `u::T1`: The density data.
-- `T::T2`: The delay function, given in the form `T(t, α, T_params)`.
-- `D::T2`: The diffusion function, given in the form `D(u, β, D_params)`.
-- `D′::T2`: The derivative of the diffusion function, given in the form `D′(u, β, D_params)`.
-- `R::T2`: The reaction function, given in the form `R(u, γ, R_params)`.
+- `T::Function: The delay function, given in the form `T(t, α, T_params)`.
+- `D::Function`: The diffusion function, given in the form `D(u, β, D_params)`.
+- `D′::Function`: The derivative of the diffusion function, given in the form `D′(u, β, D_params)`.
+- `R::Function`: The reaction function, given in the form `R(u, γ, R_params)`.
 - `α₀::T1`: Initial estimates of the delay parameters. Not actually used for anything other than ensuring the functions are specified correctly.
 - `β₀::T1`: Initial estimates of the diffusion parameters. Not actually used for anything other than ensuring the functions are specified correctly. 
 - `γ₀::T1`: Initial estimates of the reaction parameters. Not actually used for anything other than ensuring the functions are specified correctly. 
@@ -360,7 +427,8 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
 
     ## Now do the equation learning 
     glnodes, glweights = gausslegendre(length(RuN.du))
-    for j = 1:bootstrap_setup.B
+    j = 1
+    while j ≤ bootstrap_setup.B
         # Draw from N(0, 1) for sampling from the Gaussian process 
         @views randn!(zvals[:, j])
 
@@ -382,7 +450,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
         errs = DiffEqBase.dualcache(zeros(length(inIdx)), trunc(Int64, length(inIdx) / 10)) # We use dualcache since we want to use this within an automatic differentiation computation. 
 
         ## Parameter estimation 
-        @views learn_equations!(x, t, u,
+        flag = @views learn_equations!(x, t, u,
             f, fₜ, fₓ, fₓₓ,
             T, D, D′, R, T_params, D_params, R_params,
             delayBases[:, j], diffusionBases[:, j], reactionBases[:, j], stacked_params,
@@ -397,7 +465,10 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
             iterate_idx, closest_idx, glnodes, glweights, bootstrap_setup.show_losses, σₙ,
             PDEkwargs...)
 
-        print("Bootstrapping: Step $j of $(bootstrap_setup.B). Previous objective value: $(minimum(obj_values)).\u001b[1000D")
+        if !flag
+            j += 1
+            print("Bootstrapping: Step $j of $(bootstrap_setup.B). Previous objective value: $(minimum(obj_values)).\u001b[1000D")
+        end
     end
 
     Xₛⁿ = deepcopy(Xₛ)
