@@ -1,4 +1,4 @@
-# EquationLearning
+# Equation Learning
 
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://DanielVandH.github.io/EquationLearning.jl/dev)
 
