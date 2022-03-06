@@ -20,4 +20,10 @@ in the Julia REPL. Note that the `]` prefix is to enter the Pkg REPL.
 
 Any questions or issues with the package should be given as an issue, or as an email to [Daniel VandenHeuvel](mailto:vandenh2@qut.edu.au?subject=GP%20Equation%20Learning&body=Dear%20Daniel,) (this link opens an email to vandenh2@qut.edu.au). Issues are preferred.
 
+# The Future 
 
+Some future plans:
+
+- Give better default options for the ODE solvers. Would be good to have a method comparable in speed to Sundials' `CVODE_BDF(linear_solver = :Band, jac_upper = 1, jac_lower = 1)` but permits automatic differentiation for the optimiser.
+- Make the structure of the arguments more user-friendly rather than using a bunch of structures.
+- Parallelise the code and change the bootstrapping loop to a `for` loop rather than a `while` loop. 
