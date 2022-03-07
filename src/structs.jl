@@ -208,6 +208,7 @@ Structure for storing bootstrapping results. See [`bootstrap_gp`](@ref).
 - `D`: The diffusion function, given in the form `D(u, β, D_params)`.
 - `D′`: The derivative of the diffusion function, given in the form `D′(u, β, D_params)`.
 - `R`: The reaction function, given in the form `R(u, γ, R_params)`.
+- `R′`: The reaction function, given in the form `R′(u, γ, R_params)`.
 - `D_params`: Parameters for the diffusion function.
 - `R_params`: Parameters for the reaction function. 
 - `T_params`: Parameters for the delay function.
@@ -229,6 +230,7 @@ struct BootResults
     D::Function
     D′::Function
     R::Function
+    R′::Function
     D_params
     R_params
     T_params
