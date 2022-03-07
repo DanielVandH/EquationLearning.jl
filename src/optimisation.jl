@@ -32,6 +32,7 @@ Computes the loss function at `αβγ`.
 - `D`: The diffusion function, given in the form `D(u, β...)`.
 - `D′`: The derivative of the diffusion function, given in the form `D′(u, β...)`.
 - `R`: The reaction function, given in the form `R(u, γ...)`.
+- `R′::Function`: The derivative of the reaction function, given in the form `R′(u, γ, R_params)`.
 - `initialCondition`: Vector for the initial condition for the PDE.
 - `finalTime`: The final time to give the solution to the PDE at.
 - `EQLalg`: The algorithm to use for solving the PDE. Cannot be a Sundials algorithm.
@@ -39,10 +40,12 @@ Computes the loss function at `αβγ`.
 - `SSEArray`: Cache array for storing the solutions to the PDE. 
 - `Du`: Cache array for storing the values of the diffusion function at the mesh points.
 - `Ru`: Cache array for storing the values of the reaction function at the mesh points. 
-- `TuP`: Cache array for storing the values of the delay function at the unscaled times (for the `"PDE"` loss function).
-- `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"PDE"` loss function).
-- `RuP`: Cache array for storing the values of the reaction function at the estimated density values (for the `"PDE"` loss function).
-- `D′uP`: Cache array for storing the values of the derivative of the diffusion function at the estimated density values (for the `"PDE"` loss function).
+- `D′u`: Cache array used for storing the values of the derivative of the diffusion function `D` at `D′(u)`.
+- `R′u`: Cache array used for storing the values of the derivative of the reaction function `R` at `R′(u)`.
+- `TuP`: Cache array for storing the values of the delay function at the unscaled times (for the `"GLS"` loss function).
+- `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"GLS"` loss function).
+- `RuP`: Cache array for storing the values of the reaction function at the estimated density values (for the `"GLS"` loss function).
+- `D′uP`: Cache array for storing the values of the derivative of the diffusion function at the estimated density values (for the `"GLS"` loss function).
 - `RuN`: For storing values of the reaction function at Gauss-Legendre quadrature nodes.
 - `inIdx`: The indices for the data to use. See [`data_thresholder`](@ref).
 - `unscaled_t̃`: The unscaled time values on the bootstrapping grid.
@@ -79,8 +82,8 @@ If the ODE solver returns an error for the given parameter values, `∞` is adde
 function loss_function(αβγ; u,
     f, fₓ, fₓₓ, fₜ,
     N, V, Δx, LHS, RHS,
-    T, D, D′, R,
-    initialCondition, finalTime, EQLalg, δt, SSEArray, Du, Ru, TuP, DuP, RuP, D′uP, RuN,
+    T, D, D′, R, R′,
+    initialCondition, finalTime, EQLalg, δt, SSEArray, Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
     inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE, glnodes, glweights, maxf,
     D_params, R_params, T_params, iterate_idx, closest_idx, show_losses, σₙ, PDEkwargs...)
     α = @views αβγ[1:tt]
@@ -103,7 +106,7 @@ function loss_function(αβγ; u,
         try
             SSEArray = get_tmp(SSEArray, first(αβγ))
             MSE = get_tmp(MSE, first(αβγ))
-            p = (N, V, Δx, LHS..., RHS..., Du, Ru, T, D, R, α, β, γ, D_params, R_params, T_params)
+            p = (N, V, Δx, LHS..., RHS..., Du, Ru, D′u, R′u, T, D, R, D′, R′, α, β, γ, D_params, R_params, T_params)
             prob = ODEProblem(sysdegeneral!, convert.(eltype(αβγ), initialCondition), (0.0, finalTime), p)
             SSEArray .= hcat(DifferentialEquations.solve(prob, EQLalg, saveat = δt; PDEkwargs...).u...)
             for j = 1:length(δt)
@@ -162,6 +165,7 @@ Estimate values for the delay, diffusion, and reaction parameters. See [`bootstr
 - `D::Function`: The diffusion function, given in the form `D(u, β...)`.
 - `D′::Function`: The derivative of the diffusion function, given in the form `D′(u, β...)`.
 - `R::Function`: The reaction function, given in the form `R(u, γ...)`.
+- `R′::Function`: The derivative of the reaction function, given in the form `R′(u, γ, R_params)`.
 - `T_params`: Additional known parameters for the delay function.
 - `D_params`: Additional known parameters for the diffusion function.
 - `R_params`: Additional known parameters for the reaction function. 
@@ -187,6 +191,8 @@ Estimate values for the delay, diffusion, and reaction parameters. See [`bootstr
 - `SSEArray`: Cache array for storing the solutions to the PDE. 
 - `Du`: Cache array for storing the values of the diffusion function at the mesh points. Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
 - `Ru`: Cache array for storing the values of the reaction function at the mesh points.  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
+- `D′u`: Cache array used for storing the values of the derivative of the diffusion function `D` at `D′(u)`.
+- `R′u`: Cache array used for storing the values of the derivative of the reaction function `R` at `R′(u)`.
 - `TuP`: Cache array for storing the values of the delay function at the unscaled times (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
 - `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
 - `RuP`: Cache array for storing the values of the reaction function at the estimated density values (for the `"PDE"` loss function).  Should be defined as a `PreallocationTools.DiffCache` type; see [`bootstrap_helper`](@ref).
@@ -214,12 +220,12 @@ The estimates for the delay parameters, `α`, diffusion parameters, `β`, and re
 """
 function learn_equations!(x, t, u,
     f, fₜ, fₓ, fₓₓ,
-    T, D, D′, R, T_params, D_params, R_params,
+    T, D, D′, R, R′, T_params, D_params, R_params,
     α, β, γ, stacked_params,
     lowers, uppers, constrained, obj_values,
     obj_scale_GLS, obj_scale_PDE,
     N, V, Δx, LHS, RHS, initialCondition, finalTime, alg, δt, SSEArray,
-    Du, Ru, TuP, DuP, RuP, D′uP, RuN,
+    Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
     inIdx, unscaled_t̃, tt, d, r,
     errs, MSE, optim_setup,
     iterate_idx, closest_idx, glnodes, glweights, show_losses, σₙ,
@@ -231,9 +237,9 @@ function learn_equations!(x, t, u,
     optim_fnc = αβγ -> loss_function(αβγ; u,
         f, fₓ, fₓₓ, fₜ,
         N, V, Δx, LHS, RHS,
-        T, D, D′, R,
+        T, D, D′, R, R′,
         initialCondition, finalTime, EQLalg = alg,
-        δt, SSEArray, Du, Ru, TuP, DuP, RuP, D′uP, RuN,
+        δt, SSEArray, Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
         inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE,
         glnodes, glweights, maxf, D_params, R_params, T_params,
         iterate_idx, closest_idx, show_losses, σₙ, PDEkwargs...)
