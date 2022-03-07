@@ -35,29 +35,37 @@ Function for computing the system of ODEs used in a discretised delay-reaction-d
     - `p[9] = c₁`: The right-hand side constant in the Robin boundary condition at `x = b` (the right end-point of the mesh).
     - `p[10] = DD`: Cache array used for storing the values of the diffusion function `D` at `D(u)`.
     - `p[11] = RR`: Cache array used for storing the values of the reaction function `R` at `R(u)`.
-    - `p[12] = T`: The delay function, given in the form `T(t, α, T_params)`.
-    - `p[13] = D`: The diffusion function, given in the form `D(u, β, D_params)`.
-    - `p[14] = R`: The reaction function, given in the form `R(u, γ, R_params)`.
-    - `p[15] = tb`: The values of the delay parameters.
-    - `p[16] = db`: The values of the diffusion parameters.
-    - `p[17] = rb`: The values of the reaction parameters.
-    - `p[18] = D_params`: Extra parameters used in the diffusion function.
-    - `p[19] = R_params`: Extra parameters for the reaction function.
-    - `p[20] = T_params`: Extra parameters for the delay function.
+    - `p[12] = DD′`: Cache array used for storing the values of the derivative of the diffusion function `D` at `D′(u)`.
+    - `p[13] = RR′`: Cache array used for storing the values of the derivative of the reaction function `R` at `R′(u)`.
+    - `p[14] = T`: The delay function, given in the form `T(t, α, T_params)`.
+    - `p[15] = D`: The diffusion function, given in the form `D(u, β, D_params)`.
+    - `p[16] = R`: The reaction function, given in the form `R(u, γ, R_params)`.
+    - `p[17] = D′`: The derivative of the diffusion function, given in the form `D′(u, β, D_params)`.
+    - `p[18] = R′`: The derivative of the reaction function, given in the form `R′(u, γ, R_params)`.
+    - `p[19] = tb`: The values of the delay parameters.
+    - `p[20] = db`: The values of the diffusion parameters.
+    - `p[21] = rb`: The values of the reaction parameters.
+    - `p[22] = D_params`: Extra parameters used in the diffusion function.
+    - `p[23] = R_params`: Extra parameters for the reaction function.
+    - `p[24] = T_params`: Extra parameters for the delay function.
 - `t`: The current time value.
 
 # Outputs 
 The values are updated in-place into the vector `dudt` for the new value of `dudt` at time `t`.
 """
 function sysdegeneral!(dudt, u, p, t)
-    N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, DD, RR, T, D, R, tb, db, rb, D_params, R_params, T_params = p
+    N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, DD, RR, DD′, RR′, T, D, R, D′, R′, tb, db, rb, D_params, R_params, T_params = p
     if typeof(DD) <: PreallocationTools.DiffCache # If we're doing automatic differentiation 
         DD = get_tmp(DD, D(u[1], db, D_params))
         RR = get_tmp(RR, R(u[1], rb, R_params))
+        # DD′ = get_tmp(DD′, D′(u[1], db, D_params))
+        # RR′ = get_tmp(RR′, R′(u[1], rb, R_params))
     end
     for (j, uval) in enumerate(u)
         DD[j] = D(uval, db, D_params)
         RR[j] = R(uval, rb, R_params)
+        # DD′[j] = D′(uval, db, D_params)
+        # RR′[j] = R′(uval, rb, R_params)
     end
     Tt = T(t, tb, T_params)
     @muladd @inbounds begin
@@ -69,6 +77,35 @@ function sysdegeneral!(dudt, u, p, t)
     end
     dudt .*= Tt # Delay
     return nothing
+end
+
+function jacdegeneral!(J, u, p, t)
+    N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, DD, RR, DD′, RR′, T, D, R, D′, R′, tb, db, rb, D_params, R_params, T_params = p
+    if typeof(DD) <: PreallocationTools.DiffCache # If we're doing automatic differentiation 
+        DD = get_tmp(DD, D(u[1], db, D_params))
+        RR = get_tmp(RR, R(u[1], rb, R_params))
+        DD′ = get_tmp(DD′, D′(u[1], db, D_params))
+        RR′ = get_tmp(RR′, R′(u[1], rb, R_params))
+    end
+    for (j, uval) in enumerate(u)
+        DD[j] = D(uval, db, D_params)
+        RR[j] = R(uval, rb, R_params)
+        DD′[j] = D′(uval, db, D_params)
+        RR′[j] = R′(uval, rb, R_params)
+    end
+    Tt = T(t, tb, T_params)
+    @muladd @inbounds begin 
+        J[1, 1] = Tt * (RR′[1] - (DD[1] + DD[2])/(2*V[1]*h[1]) - DD′[1]*(u[1] - u[2])/(2*V[1]*h[1]) + c₀*DD′[2]/(V[1]*b₀) - a₀*DD[1]/(V[1]*b₀) - a₀*u[1]*DD′[1]/(V[1]*b₀))
+        J[1, 2] = Tt * ((DD[1] + DD[2])/(2V[1]*h[1]) - DD′[2]*(u[1] - u[2])/(2V[1]*h[1]))
+        for i = 2:(N-1)
+            J[i, i-1] = Tt * ((DD[i] + DD[i+1])/(2V[i]*h[i]) + DD′[i-1]*(u[i-1] - u[i])/(2V[i]*h[i-1]))
+            J[i, i] = Tt * (RR′[i] - (DD[i] + DD[i+1])/(2V[i]*h[i]) - (DD[i-1] - DD[i])/(2V[i]*h[i-1]) - DD′[i]*(u[i-1] - u[i])/(2V[i]*h[i-1]) - DD′[i]*(u[i] - u[i+1])/(2V[i]*h[i]))
+            J[i, i+1] = Tt * ((DD[i-1] - DD[i])/(2V[i]*h[i-1]) - DD′[i+1]*(u[i] - u[i+1])/(2V[i]*h[i]))
+        end
+        J[N, N-1] = Tt * ((DD[N] + DD[N-1])/(2V[N]*h[N-1]) - DD′[N-1]*(u[N] - u[N-1])/(2V[N]*h[N-1]))
+        J[N, N] = Tt * (RR′[N] - (DD[N] + DD[N-1])/(2V[N]*h[N-1]) - DD′[N]*(u[N] - u[N-1])/(2V[N]*h[N-1]) + c₁*DD′[N]/(V[N]*b₁) - a₁*DD[N]/(V[N]*b₁) - a₁u[N]*DD′[N]/(V[N]*b₁))
+    end
+    return nothing 
 end
 
 """
@@ -219,12 +256,14 @@ function boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.
     sample_idx = StatsBase.sample(idx, rand_pde)
     Du = zeros(N, 1)
     Ru = zeros(N, 1)
+    D′u = zeros(N, 1)
+    R′u = zeros(N, 1)
     Δx = diff(bgp.pde_setup.meshPoints)
     V = @views 1 / 2 * [Δx[1]; Δx[1:(N-2)] + Δx[2:(N-1)]; Δx[N-1]]
     tspan = (0.0, finalTime)
     @views @muladd @inbounds for (pdeidx, coeff) in collect(enumerate(sample_idx)) # Don't need collect here, but it was useful previously when dealing with threading (before we removed threading). Just keeping it as a reminder.
         initialCondition .= initialCondition_all[:, coeff]
-        p = (N, V, Δx, bgp.pde_setup.LHS..., bgp.pde_setup.RHS..., Du, Ru, bgp.T, bgp.D, bgp.R, tr[:, coeff], dr[:, coeff], rr[:, coeff], bgp.D_params, bgp.R_params, bgp.T_params)
+        p = (N, V, Δx, bgp.pde_setup.LHS..., bgp.pde_setup.RHS..., Du, Ru, D′u, R′u, bgp.T, bgp.D, bgp.R, bgp.D′, bgp.R′, tr[:, coeff], dr[:, coeff], rr[:, coeff], bgp.D_params, bgp.R_params, bgp.T_params)
         prob = ODEProblem(sysdegeneral!, initialCondition, tspan, p)
         solns_all[:, pdeidx, :] .= hcat(DifferentialEquations.solve(prob, bgp.pde_setup.alg, saveat = bgp.pde_setup.δt).u...)
         print("Solving PDEs: Step $pdeidx of $rand_pde.\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
