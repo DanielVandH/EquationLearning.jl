@@ -20,6 +20,8 @@ fitted Gaussian process.
 - `T`: A delay function of the form `T(t, α, T_params)`.
 - `D`: A diffusion function of the form `D(u, β, D_params)`.
 - `R`: A reaction function of the form `R(u, γ, R_params)`.
+- `D′`: The derivative of the diffusion function, given in the form `D′(u, β, D_params)`.
+- `R′`: The reaction function, given in the form `R(u, γ, R_params)`.
 - `α`: Exact values for the delay parameters.
 - `β`: Exact values for the diffusion parameters.
 - `γ`: Exact values for the reaction parameters. 
@@ -37,7 +39,7 @@ fitted Gaussian process.
 - `R_params`: Additional known parameters for the reaction function.
 - `T_params`: Additional known parameters for the delay function.
 """
-function generate_data(x₀, u₀, T, D, R, α, β, γ, δt, finalTime; 
+function generate_data(x₀, u₀, T, D, R, D′, R′, α, β, γ, δt, finalTime; 
     N = 1000, LHS = [0.0, 1.0, 0.0], RHS = [0.0, -1.0, 0.0], 
     alg = nothing, 
     N_thin = 100, num_restarts = 50, D_params, R_params, T_params)
@@ -96,13 +98,16 @@ function generate_data(x₀, u₀, T, D, R, α, β, γ, δt, finalTime;
     V = @views 1 / 2 * [h[1]; h[1:(N-2)] + h[2:(N-1)]; h[N-1]]
 
     # Define parameters
-    Du = zeros(N)
-    Ru = zeros(N)
-    p = (N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, Du, Ru, T, D, R, α, β, γ, D_params, R_params, T_params)
+    Du = DiffEqBase.dualcache(zeros(N), trunc(Int64, N / 10)) # We use dualcache so that we can easily integrate automatic differentiation into our ODE solver. The last argument is the chunk size, see the ForwardDiff docs for details. The /10 is just some heuristic I developed based on warnings given by PreallocationTools.
+    D′u = DiffEqBase.dualcache(zeros(N), trunc(Int64, N / 10))
+    Ru = DiffEqBase.dualcache(zeros(N), trunc(Int64, N / 10))
+    R′u = DiffEqBase.dualcache(zeros(N), trunc(Int64, N / 10))
+    p = (N, V, h, a₀, b₀, c₀, a₁, b₁, c₁, Du, Ru, D′u, R′u, T, D, R, D′, R′, α, β, γ, D_params, R_params, T_params)
 
     # Solve 
-    tspan = (0.0, finalTime)
-    prob = ODEProblem(sysdegeneral!, initialCondition, tspan, p)
+    tspan = (0.0, finalTime)    
+    ode_fnc = ODEFunction(sysdegeneral!)
+    prob = ODEProblem(ode_fnc, initialCondition, tspan, p, jac_prototype = Tridiagonal(zeros(N, N)))
     sol = DifferentialEquations.solve(prob, alg; saveat = δt)
     u = abs.(hcat(sol.u...))
     # Add noise 
