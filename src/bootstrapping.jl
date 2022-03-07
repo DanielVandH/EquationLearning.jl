@@ -162,6 +162,7 @@ See [`bootstrap_helper`](@ref) for details and [`bootstrap_gp`](@ref) for its us
 - `TuP`: Cache array for storing the values of the delay function at the unscaled times (for the `"PDE"` loss function).
 - `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"PDE"` loss function).
 - `D′uP`: Cache array for storing the values of the derivative of the diffusion function at the estimated density values (for the `"PDE"` loss function).
+- `R′uP`: Cache array for storing the values of the derivative of the reaction function at the estimated density values (for the `"PDE"` loss function).
 - `RuP`: Cache array for storing the values of the reaction function at the estimated density values (for the `"PDE"` loss function).
 - `RuN`: For storing values of the reaction function at Gauss-Legendre quadrature nodes.
 - `SSEArray`: Cache array for storing the solutions to the PDEs.
@@ -188,6 +189,7 @@ function preallocate_eqlearn(num_restarts, meshPoints, δt, finalTime, Xₛ, tt,
     Du = DiffEqBase.dualcache(zeros(N), trunc(Int64, N / 10)) # We use dualcache so that we can easily integrate automatic differentiation into our ODE solver. The last argument is the chunk size, see the ForwardDiff docs for details. The /10 is just some heuristic I developed based on warnings given by PreallocationTools.
     D′u = DiffEqBase.dualcache(zeros(N), trunc(Int64, N / 10))
     Ru = DiffEqBase.dualcache(zeros(N), trunc(Int64, N / 10))
+    R′u = DiffEqBase.dualcache(zeros(N), trunc(Int64, N / 10))
     TuP = DiffEqBase.dualcache(zeros(nₓnₜ), trunc(Int64, nₓnₜ / 10))
     DuP = DiffEqBase.dualcache(zeros(nₓnₜ), trunc(Int64, nₓnₜ / 10))
     D′uP = DiffEqBase.dualcache(zeros(nₓnₜ), trunc(Int64, nₓnₜ / 10))
@@ -202,7 +204,7 @@ function preallocate_eqlearn(num_restarts, meshPoints, δt, finalTime, Xₛ, tt,
     # Return 
     return obj_values, stacked_params,
     N, Δx, V,
-    Du, D′u, Ru, TuP, DuP, D′uP, RuP, RuN,
+    Du, D′u, Ru, R′u, TuP, DuP, D′uP, RuP, RuN,
     SSEArray, Xₛ₀, IC1, initialCondition, MSE
 end
 
@@ -278,6 +280,7 @@ Optimisation:
 - `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"PDE"` loss function).
 - `D′uP`: Cache array for storing the values of the derivative of the diffusion function at the estimated density values (for the `"PDE"` loss function).
 - `RuP`: Cache array for storing the values of the reaction function at the estimated density values (for the `"PDE"` loss function).
+- `R′uP`: Cache array for storing the values of the derivative of the reaction function at the estimated density values (for the `"PDE"` loss function).
 - `RuN`: For storing values of the reaction function at Gauss-Legendre quadrature nodes.
 *PDE loss function*:
 - `SSEArray`: Cache array for storing the solutions to the PDEs.
@@ -296,7 +299,7 @@ function bootstrap_helper(x, t, bootₓ, bootₜ, α₀, β₀, γ₀, B, num_re
     ℓz, zvals = preallocate_bootstrap(nₓnₜ, α₀, β₀, γ₀, B)
     obj_values, stacked_params,
     N, Δx, V,
-    Du, D′u, Ru, TuP, DuP, D′uP, RuP, RuN,
+    Du, D′u, Ru, R′u, TuP, DuP, D′uP, RuP, RuN,
     SSEArray, Xₛ₀, IC1,
     initialCondition, MSE = preallocate_eqlearn(num_restarts, meshPoints, δt, finalTime, Xₛ, tt, d, r, nₓnₜ, gp, lowers, uppers)
     return x_min, x_max, t_min, t_max, x_rng, t_rng, Xₛ, unscaled_t̃, nₓnₜ,
@@ -307,7 +310,7 @@ function bootstrap_helper(x, t, bootₓ, bootₜ, α₀, β₀, γ₀, B, num_re
     ℓz, zvals,
     obj_values, stacked_params,
     N, Δx, V,
-    Du, D′u, Ru, TuP, DuP, D′uP, RuP, RuN,
+    Du, D′u, Ru, R′u, TuP, DuP, D′uP, RuP, RuN,
     SSEArray, Xₛ₀, IC1,
     initialCondition, MSE
 end
@@ -345,6 +348,7 @@ Perform bootstrapping on the data `(x, t, u)` to learn the appropriate functiona
 - `D::Function`: The diffusion function, given in the form `D(u, β, D_params)`.
 - `D′::Function`: The derivative of the diffusion function, given in the form `D′(u, β, D_params)`.
 - `R::Function`: The reaction function, given in the form `R(u, γ, R_params)`.
+- `R′::Function`: The derivative of the reaction function, given in the form `R′(u, γ, R_params)`.
 - `α₀::T1`: Initial estimates of the delay parameters. Not actually used for anything other than ensuring the functions are specified correctly.
 - `β₀::T1`: Initial estimates of the diffusion parameters. Not actually used for anything other than ensuring the functions are specified correctly. 
 - `γ₀::T1`: Initial estimates of the reaction parameters. Not actually used for anything other than ensuring the functions are specified correctly. 
@@ -365,7 +369,7 @@ Perform bootstrapping on the data `(x, t, u)` to learn the appropriate functiona
 - `bgp`: A `BootResults` structure. See [`BootResults`](@ref). 
 """
 function bootstrap_gp(x::T1, t::T1, u::T1,
-    T::Function, D::Function, D′::Function, R::Function,
+    T::Function, D::Function, D′::Function, R::Function, R′::Function,
     α₀::T1, β₀::T1, γ₀::T1, lowers::T1, uppers::T1;
     gp_setup::GP_Setup = GP_Setup(u),
     bootstrap_setup::Bootstrap_Setup = Bootstrap_Setup(x, t, u),
@@ -414,7 +418,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
     ℓz, zvals,
     obj_values, stacked_params,
     N, Δx, V,
-    Du, D′u, Ru, TuP, DuP, D′uP, RuP, RuN,
+    Du, D′u, Ru, R′u, TuP, DuP, D′uP, RuP, RuN,
     SSEArray, Xₛ₀, IC1,
     initialCondition, MSE = bootstrap_helper(x, t, α₀, β₀, γ₀, lowers, uppers, gp_setup, bootstrap_setup, pde_setup)
 
@@ -452,14 +456,14 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
         ## Parameter estimation 
         flag = @views learn_equations!(x, t, u,
             f, fₜ, fₓ, fₓₓ,
-            T, D, D′, R, T_params, D_params, R_params,
+            T, D, D′, R, R′, T_params, D_params, R_params,
             delayBases[:, j], diffusionBases[:, j], reactionBases[:, j], stacked_params,
             lowers, uppers, bootstrap_setup.constrained, obj_values,
             bootstrap_setup.obj_scale_GLS, bootstrap_setup.obj_scale_PDE,
             N, V, Δx, pde_setup.LHS, pde_setup.RHS, initialCondition,
             pde_setup.finalTime, pde_setup.alg, pde_setup.δt,
             SSEArray,
-            Du, Ru, TuP, DuP, RuP, D′uP, RuN,
+            Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
             inIdx, unscaled_t̃, tt, d, r,
             errs, MSE, optim_setup,
             iterate_idx, closest_idx, glnodes, glweights, bootstrap_setup.show_losses, σₙ,
@@ -476,5 +480,5 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
     @muladd @views @. Xₛⁿ[2, :] = Xₛ[2, :] * t_rng + t_min
 
     ## Return the results 
-    return BootResults(delayBases, diffusionBases, reactionBases, gp, zvals, Xₛ, Xₛⁿ, bootstrap_setup.bootₓ, bootstrap_setup.bootₜ, T, D, D′, R, D_params, R_params, T_params, μ, L, gp_setup, bootstrap_setup, pde_setup)
+    return BootResults(delayBases, diffusionBases, reactionBases, gp, zvals, Xₛ, Xₛⁿ, bootstrap_setup.bootₓ, bootstrap_setup.bootₜ, T, D, D′, R, R′, D_params, R_params, T_params, μ, L, gp_setup, bootstrap_setup, pde_setup)
 end
