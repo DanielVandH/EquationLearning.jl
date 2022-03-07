@@ -25,6 +25,7 @@ Any questions or issues with the package should be given as an issue, or as an e
 Some future plans (amongst many other ideas):
 
 - Top priority: Implement reliable unit tests.
+- Devise better methods for terminating the optimiser faster when the initial parameter estimate is clearly not close to optimal, e.g. by limiting the allowed time in the optimiser and implementing a callback in the ODE solver that will more effectively detect when the solution needs to terminate. This woull significantly improve the runtime of the algorithm.
 - Give better default options for the ODE solvers. Would be good to have a method comparable in speed to Sundials' `CVODE_BDF(linear_solver = :Band, jac_upper = 1, jac_lower = 1)` but permits automatic differentiation for the optimiser.
 - Make the structure of the arguments more user-friendly rather than using a bunch of structures.
 - Parallelise the code and change the bootstrapping loop to a `for` loop rather than a `while` loop. 
