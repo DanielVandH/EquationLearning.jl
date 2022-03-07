@@ -332,3 +332,39 @@ function pde_results(x_pde, t_pde, u_pde, solns_all, bgp::BootResults;
 
     return pdeSolutionPlots_BGP
 end
+
+function delay_product(bgp, t; type = "diffusion", level = 0.05, x_scale = 1.0, t_scale = 1.0)
+    trv = bgp.delayBases 
+    if type == "diffusion"
+        dr = bgp.diffusionBases 
+        F = bgp.D 
+        scale = x_scale^2/t_scale
+        p = bgp.D_params
+    else
+        dr = bgp.reactionBases 
+        F = bgp.R 
+        scale = 1/t_scale
+        p = bgp.R_params
+    end
+    B = size(dr, 2)
+    num_u = 500
+    u_vals = collect(range(minimum(bgp.gp.y), maximum(bgp.gp.y), length = num_u))
+    TDu_mean = zeros(num_u)
+    TDu_upper = zeros(num_u)
+    TDu_lower = zeros(num_u)
+    stor_vals = zeros(B^2)
+    for (i, u) in enumerate(u_vals)
+        idx = 1
+        for α in eachcol(trv)
+            for θ in eachcol(dr)
+                stor_vals[idx] = bgp.T(t, α, bgp.T_params) * F(u, θ, p) * scale
+                idx += 1
+            end
+        end
+        TDu_mean[i] = mean(stor_vals)
+        TDu_lower[i] = quantile(stor_vals, level / 2)
+        TDu_upper[i] = quantile(stor_vals, 1 - level / 2)
+    end
+    return TDu_mean, TDu_lower, TDu_upper 
+end
+
