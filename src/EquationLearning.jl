@@ -41,6 +41,6 @@ include("synthetic_data.jl")    # Function for generating synthetic data
 ## Export functions
 #####################################################################
 
-export bootstrap_gp, boot_pde_solve, curve_results, density_results, pde_results, GP_Setup, Bootstrap_Setup, PDE_Setup, BootResults
+export bootstrap_gp, boot_pde_solve, curve_results, density_results, pde_results, GP_Setup, Bootstrap_Setup, PDE_Setup, BootResults, density_values, curve_values, pde_values, error_comp
 
 end
