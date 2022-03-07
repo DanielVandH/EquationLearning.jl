@@ -157,19 +157,21 @@ diffusionDensityAxes = Vector{Axis}(undef, d)
 reactionDensityAxes = Vector{Axis}(undef, r)
 for i = 1:d
     diffusionDensityAxes[i] = Axis(densityFigures[1, i], xlabel = L"$\beta_%$i$ (μm²/h)", ylabel = "Probability density",
-        title = @sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i], diffusionCIs[i, 1], diffusionCIs[i, 2]),
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i], diffusionCIs[i, 1], diffusionCIs[i, 2]),
         titlealign = :left)
     densdat = KernelDensity.kde(dr[i, :])
-    lines!(diffusionDensityAxes[i], densdat.x, densdat.density, color = :blue, linewidth = 3)
+    in_range = minimum(dr[i, :]) .< densdat.x .< maximum(dr[i, :])
+    lines!(diffusionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
     CI_range = diffusionCIs[i, 1] .< densdat.x .< diffusionCIs[i, 2]
     band!(diffusionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
 end
 for i = 1:r
     reactionDensityAxes[i] = Axis(densityFigures[1, i+1], xlabel = L"$\gamma_%$i$ (1/h)", ylabel = "Probability density",
-        title = @sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i+1], reactionCIs[i, 1], reactionCIs[i, 2]),
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i+1], reactionCIs[i, 1], reactionCIs[i, 2]),
         titlealign = :left)
     densdat = kde(rr[i, :])
-    lines!(reactionDensityAxes[i], densdat.x, densdat.density, color = :blue, linewidth = 3)
+    in_range = minimum(rr[i, :]) .< densdat.x .< maximum(rr[i, :])
+    lines!(reactionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
     CI_range = reactionCIs[i, 1] .< densdat.x .< reactionCIs[i, 2]
     band!(reactionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
 end
@@ -194,20 +196,22 @@ diffusionDensityAxes = Vector{Axis}(undef, d)
 reactionDensityAxes = Vector{Axis}(undef, r)
 for i = 1:d
     diffusionDensityAxes[i] = Axis(resultFigures[1, i], xlabel = L"$\beta_%$i$ (μm²/h)", ylabel = "Probability density",
-        title = @sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i], diffusionCIs[i, 1], diffusionCIs[i, 2]),
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i], diffusionCIs[i, 1], diffusionCIs[i, 2]),
         titlealign = :left)
     densdat = KernelDensity.kde(dr[i, :])
-    lines!(diffusionDensityAxes[i], densdat.x, densdat.density, color = :blue, linewidth = 3)
+    in_range = minimum(dr[i, :]) .< densdat.x .< maximum(dr[i, :])
+    lines!(diffusionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
     CI_range = diffusionCIs[i, 1] .< densdat.x .< diffusionCIs[i, 2]
     vlines!(diffusionDensityAxes[i], β * x_scale^2 / t_scale, color = :red, linestyle = :dash)
     band!(diffusionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
 end
 for i = 1:r
     reactionDensityAxes[i] = Axis(resultFigures[2, i], xlabel = L"$\gamma_%$i$ (1/h)", ylabel = "Probability density",
-        title = @sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i+1], reactionCIs[i, 1], reactionCIs[i, 2]),
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i+1], reactionCIs[i, 1], reactionCIs[i, 2]),
         titlealign = :left)
     densdat = kde(rr[i, :])
-    lines!(reactionDensityAxes[i], densdat.x, densdat.density, color = :blue, linewidth = 3)
+    in_range = minimum(rr[i, :]) .< densdat.x .< maximum(rr[i, :])
+    lines!(reactionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
     CI_range = reactionCIs[i, 1] .< densdat.x .< reactionCIs[i, 2]
     vlines!(reactionDensityAxes[i], γ / t_scale, color = :red, linestyle = :dash)
     band!(reactionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
@@ -226,7 +230,7 @@ lines!(reactionAxis, u_vals / x_scale^2, R.(u_vals, γ, Ref([K, 1.0])) / t_scale
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_data, bgp)
 err_CI = error_comp(bgp, pde_data, x_pde, t_pde, u_pde)
 M = length(bgp.pde_setup.δt)
-dataAxis = Axis(resultFigures[1, 3], xlabel = L"$x$ [μm]", ylabel = L"$u(x, t)$ [cells/μm²]", title = @sprintf("(e): PDE curves with spline ICs\nError: (%.3g, %.3g)", err_CI[1], err_CI[2]), titlealign = :left)
+dataAxis = Axis(resultFigures[1, 3], xlabel = L"$x$ [μm]", ylabel = L"$u(x, t)$ [cells/μm²]", title = @sprintf("(e): PDE curves with spline ICs\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign = :left)
 @views for j in 1:M
     lines!(dataAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color = colors[j])
     band!(dataAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color = (colors[j], 0.35))
@@ -235,7 +239,7 @@ end
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_gp, bgp)
 err_CI = error_comp(bgp, pde_gp, x_pde, t_pde, u_pde)
 M = length(bgp.pde_setup.δt)
-GPAxis = Axis(resultFigures[2, 3], xlabel = L"$x$ [μm]", ylabel = L"$u(x, t)$ [cells/μm²]", title = @sprintf("(f): PDE curves with sampled ICs\nError: (%.3g, %.3g)", err_CI[1], err_CI[2]), titlealign = :left)
+GPAxis = Axis(resultFigures[2, 3], xlabel = L"$x$ [μm]", ylabel = L"$u(x, t)$ [cells/μm²]", title = @sprintf("(f): PDE curves with sampled ICs\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign = :left)
 @views for j in 1:M
     lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color = colors[j])
     band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color = (colors[j], 0.35))
@@ -300,4 +304,209 @@ bootstrap_setup = @set bootstrap_setup.B = 10
 bootstrap_setup = @set bootstrap_setup.show_losses = true
 bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 4
 bgp = bootstrap_gp(x, t, u, T, D, D′, R, R′, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
+pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
 
+# Inspect the results 
+trv, dr, rr, tt, d, r, delayCIs, diffusionCIs, reactionCIs = density_values(bgp; level = 0.05, diffusion_scales = x_scale^2 / t_scale, reaction_scales = 1 / t_scale)
+densityPDEFigures = Figure(fontsize = fontsize, resolution = (1200, 800))
+diffusionDensityAxes = Vector{Axis}(undef, d)
+reactionDensityAxes = Vector{Axis}(undef, r)
+for i = 1:d
+    diffusionDensityAxes[i] = Axis(densityPDEFigures[1, i], xlabel = L"$\beta_%$i$ (μm²/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i], diffusionCIs[i, 1], diffusionCIs[i, 2]),
+        titlealign = :left)
+    densdat = KernelDensity.kde(dr[i, :])
+    in_range = minimum(dr[i, :]) .< densdat.x .< maximum(dr[i, :])
+    lines!(diffusionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = diffusionCIs[i, 1] .< densdat.x .< diffusionCIs[i, 2]
+    band!(diffusionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+for i = 1:r
+    reactionDensityAxes[i] = Axis(densityPDEFigures[2, i], xlabel = L"$\gamma_%$i$ (1/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i+2], reactionCIs[i, 1], reactionCIs[i, 2]),
+        titlealign = :left)
+    densdat = kde(rr[i, :])
+    in_range = minimum(rr[i, :]) .< densdat.x .< maximum(dr[i, :])
+    lines!(reactionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = reactionCIs[i, 1] .< densdat.x .< reactionCIs[i, 2]
+    band!(reactionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_gp, bgp)
+err_CI = error_comp(bgp, pde_gp, x_pde, t_pde, u_pde)
+M = length(bgp.pde_setup.δt)
+GPAxis = Axis(densityPDEFigures[2, 2], xlabel = L"$x$ [μm]", ylabel = L"$u(x, t)$ [cells/μm²]", title = @sprintf("(d): PDE curves with sampled ICs\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign = :left)
+@views for j in 1:M
+    lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color = colors[j])
+    band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color = (colors[j], 0.35))
+    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color = colors[j], markersize = 3)
+end
+Legend(densityPDEFigures[1:2, 3], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation = :vertical, labelsize = fontsize, titlesize = fontsize, titleposition = :top)
+save("figures/simulation_study_initial_porous_fisher_results.pdf", densityPDEFigures, px_per_unit = 2)
+
+# Now choose a new model 
+T = (t, α, p) -> 1.0/(1.0 + exp(-α[1] * p[1] - α[2] * p[2] * t))
+D = (u, β, p) -> β[1] * p[2] * (u / p[1])
+D′ = (u, β, p) -> β[1] * p[2] / p[1]
+R = (u, γ, p) -> γ[1] * p[2] * u * (1.0 - u / p[1])
+R′ = (u, γ, p) -> γ[1] * p[2] - 2.0 * γ[1] * p[2] * u / p[1]
+α₀ = [1.0, 1.0]
+β₀ = [1.0]
+γ₀ = [1.0]
+T_params = [1.0, 1.0]
+D_params = [K, 1.0, 1.0]
+R_params = [K, 1.0]
+lowers = [-10, 0.0, 0.001, 0.6] 
+uppers = [0.0, 10.0, 0.5, 3.5]
+bootstrap_setup = @set bootstrap_setup.B = 10
+bootstrap_setup = @set bootstrap_setup.show_losses = true
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 4
+bgp = bootstrap_gp(x, t, u, T, D, D′, R, R′, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
+
+# Look at the densities and PDE for the new model 
+trv, dr, rr, tt, d, r, delayCIs, diffusionCIs, reactionCIs = density_values(bgp; level = 0.05, delay_scales = [1.0, 1 / t_scale], diffusion_scales = x_scale^2 / t_scale, reaction_scales = 1 / t_scale)
+densityPDEFigures = Figure(fontsize = fontsize, resolution = (800, 400))
+delayDensityAxes = Vector{Axis}(undef, tt)
+diffusionDensityAxes = Vector{Axis}(undef, d)
+reactionDensityAxes = Vector{Axis}(undef, r)
+for i = 1:tt
+    delayDensityAxes[i] = Axis(densityPDEFigures[1, i], xlabel = i == 1 ? L"$\alpha_%$i$" : L"$\alpha_%$i$ (1/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i], delayCIs[i, 1], delayCIs[i, 2]),
+        titlealign = :left)
+    densdat = KernelDensity.kde(trv[i, :])
+    in_range = minimum(trv[i, :]) .< densdat.x .< maximum(trv[i, :])
+    lines!(delayDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = delayCIs[i, 1] .< densdat.x .< delayCIs[i, 2]
+    band!(delayDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+for i = 1:d
+    diffusionDensityAxes[i] = Axis(densityPDEFigures[2, i], xlabel = L"$\beta_%$i$ (μm²/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i+2], diffusionCIs[i, 1], diffusionCIs[i, 2]),
+        titlealign = :left)
+    densdat = KernelDensity.kde(dr[i, :])
+    in_range = minimum(dr[i, :]) .< densdat.x .< maximum(dr[i, :])
+    lines!(diffusionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = diffusionCIs[i, 1] .< densdat.x .< diffusionCIs[i, 2]
+    band!(diffusionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+for i = 1:r
+    reactionDensityAxes[i] = Axis(densityPDEFigures[2, i+1], xlabel = L"$\gamma_%$i$ (1/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i+3], reactionCIs[i, 1], reactionCIs[i, 2]),
+        titlealign = :left)
+    densdat = kde(rr[i, :])
+    in_range = minimum(rr[i, :]) .< densdat.x .< maximum(dr[i, :])
+    lines!(reactionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = reactionCIs[i, 1] .< densdat.x .< reactionCIs[i, 2]
+    band!(reactionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+save("figures/simulation_study_revised_porous_fisher_results.pdf", densityPDEFigures, px_per_unit = 2)
+
+# Now rescale 
+lowers = [0.5, 0.5, 0.5, 0.5]
+uppers = [1.5, 1.5, 1.5, 1.5]
+bootstrap_setup = @set bootstrap_setup.B = 100
+bootstrap_setup = @set bootstrap_setup.show_losses = false
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 1
+T_params = [-4.0651, 0.4166 * t_scale]
+D_params = [K, 2900 * t_scale / x_scale^2]
+R_params = [K, 0.0951 * t_scale]
+bgp = bootstrap_gp(x, t, u, T, D, D′, R, R′, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
+pde_data = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "data")
+pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
+
+# Plot the results 
+trv, dr, rr, tt, d, r, delayCIs, diffusionCIs, reactionCIs = density_values(bgp; level = 0.05, diffusion_scales = D_params[1] * x_scale^2 / t_scale, reaction_scales = R_params[2] / t_scale)
+resultFigures = Figure(fontsize = fontsize, resolution = (1200, 800))
+delayDensityAxes = Vector{Axis}(undef, tt)
+diffusionDensityAxes = Vector{Axis}(undef, d)
+reactionDensityAxes = Vector{Axis}(undef, r)
+for i = 1:tt
+    delayDensityAxes[i] = Axis(resultFigures[1, i], xlabel = i == 1 ? L"$\alpha_%$i$" : L"$\alpha_%$i$ (1/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i], delayCIs[i, 1], delayCIs[i, 2]),
+        titlealign = :left)
+    densdat = KernelDensity.kde(trv[i, :])
+    in_range = minimum(trv[i, :]) .< densdat.x .< maximum(trv[i, :])
+    lines!(delayDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = delayCIs[i, 1] .< densdat.x .< delayCIs[i, 2]
+    band!(delayDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+for i = 1:d
+    diffusionDensityAxes[i] = Axis(resultFigures[2, i], xlabel = L"$\beta_%$i$ (μm²/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i+3], diffusionCIs[i, 1], diffusionCIs[i, 2]),
+        titlealign = :left)
+    densdat = KernelDensity.kde(dr[i, :])
+    in_range = minimum(dr[i, :]) .< densdat.x .< maximum(dr[i, :])
+    lines!(diffusionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = diffusionCIs[i, 1] .< densdat.x .< diffusionCIs[i, 2]
+    band!(diffusionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+for i = 1:r
+    reactionDensityAxes[i] = Axis(resultFigures[2, i+1], xlabel = L"$\gamma_%$i$ (1/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i+3], reactionCIs[i, 1], reactionCIs[i, 2]),
+        titlealign = :left)
+    densdat = kde(rr[i, :])
+    in_range = minimum(rr[i, :]) .< densdat.x .< maximum(dr[i, :])
+    lines!(reactionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = reactionCIs[i, 1] .< densdat.x .< reactionCIs[i, 2]
+    band!(reactionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+
+Tu_vals, Du_vals, Ru_vals, u_vals, t_vals = curve_values(bgp; level = 0.05, x_scale = x_scale, t_scale = t_scale)
+delayAxis = Axis(resultFigures[1, 3], xlabel = L"$t$ [h]", ylabel = L"$T(u)$", title = "(c): Delay curve", linewidth = 1.3, linecolor = :blue, titlealign = :left)
+lines!(delayAxis, t_vals * t_scale, Tu_vals[1])
+band!(delayAxis, t_vals * t_scale, Tu_vals[3], Tu_vals[2], color = (:blue, 0.1))
+lines!(delayAxis, t_vals * t_scale, T.(t_vals, Ref(α), Ref([1.0, 1.0])), color = :red, linestyle = :dash)
+diffusionAxis = Axis(resultFigures[2, 3], xlabel = L"$u$ [cells/μm²]", ylabel = L"$D(u)$ [μm²/h]", title = "(f): Diffusion curve", linewidth = 1.3, linecolor = :blue, titlealign = :left)
+Du_vals0 = delay_product(bgp, 0.0; type = "diffusion", x_scale = x_scale, t_scale = t_scale)
+Du_vals12 = delay_product(bgp, 12.0/t_scale; type = "diffusion", x_scale = x_scale, t_scale = t_scale)
+Du_vals24 = delay_product(bgp, 24.0/t_scale; type = "diffusion", x_scale = x_scale, t_scale = t_scale)
+Du_vals36 = delay_product(bgp, 36.0/t_scale; type = "diffusion", x_scale = x_scale, t_scale = t_scale)
+Du_vals48 = delay_product(bgp, 48.0/t_scale; type = "diffusion", x_scale = x_scale, t_scale = t_scale)
+lines!(diffusionAxis, u_vals / x_scale^2, Du_vals0[1], color = colors[1])
+lines!(diffusionAxis, u_vals / x_scale^2, Du_vals12[1], color = colors[2])
+lines!(diffusionAxis, u_vals / x_scale^2, Du_vals24[1], color = colors[3])
+lines!(diffusionAxis, u_vals / x_scale^2, Du_vals36[1], color = colors[4])
+lines!(diffusionAxis, u_vals / x_scale^2, Du_vals48[1], color = colors[5])
+band!(diffusionAxis, u_vals / x_scale^2, Du_vals0[3], Du_vals0[2], color = (colors[1], 0.1))
+band!(diffusionAxis, u_vals / x_scale^2, Du_vals12[3], Du_vals12[2], color = (colors[2], 0.1))
+band!(diffusionAxis, u_vals / x_scale^2, Du_vals24[3], Du_vals24[2], color = (colors[3], 0.1))
+band!(diffusionAxis, u_vals / x_scale^2, Du_vals36[3], Du_vals36[2], color = (colors[4], 0.1))
+band!(diffusionAxis, u_vals / x_scale^2, Du_vals48[3], Du_vals48[2], color = (colors[5], 0.1))
+lines!(diffusionAxis, u_vals / x_scale^2, D.(u_vals, β, Ref([K, 1.0])) .* x_scale^2 / t_scale, color = :red, linestyle = :dash)
+reactionAxis = Axis(resultFigures[3, 3], xlabel = L"$u$ [cells/μm²]", ylabel = L"$R(u)$ [1/h]", title = "(i): Reaction curve", linewidth = 1.3, linecolor = :blue, titlealign = :left)
+Ru_vals0 = delay_product(bgp, 0.0; type = "reaction", x_scale = x_scale, t_scale = t_scale)
+Ru_vals12 = delay_product(bgp, 12.0/t_scale; type = "reaction", x_scale = x_scale, t_scale = t_scale)
+Ru_vals24 = delay_product(bgp, 24.0/t_scale; type = "reaction", x_scale = x_scale, t_scale = t_scale)
+Ru_vals36 = delay_product(bgp, 36.0/t_scale; type = "reaction", x_scale = x_scale, t_scale = t_scale)
+Ru_vals48 = delay_product(bgp, 48.0/t_scale; type = "reaction", x_scale = x_scale, t_scale = t_scale)
+lines!(reactionAxis, u_vals / x_scale^2, Ru_vals0[1], color = colors[1])
+lines!(reactionAxis, u_vals / x_scale^2, Ru_vals12[1], color = colors[2])
+lines!(reactionAxis, u_vals / x_scale^2, Ru_vals24[1], color = colors[3])
+lines!(reactionAxis, u_vals / x_scale^2, Ru_vals36[1], color = colors[4])
+lines!(reactionAxis, u_vals / x_scale^2, Ru_vals48[1], color = colors[5])
+band!(reactionAxis, u_vals / x_scale^2, Ru_vals0[3], Ru_vals0[2], color = (colors[1], 0.1))
+band!(reactionAxis, u_vals / x_scale^2, Ru_vals12[3], Ru_vals12[2], color = (colors[2], 0.1))
+band!(reactionAxis, u_vals / x_scale^2, Ru_vals24[3], Ru_vals24[2], color = (colors[3], 0.1))
+band!(reactionAxis, u_vals / x_scale^2, Ru_vals36[3], Ru_vals36[2], color = (colors[4], 0.1))
+band!(reactionAxis, u_vals / x_scale^2, Ru_vals48[3], Ru_vals48[2], color = (colors[5], 0.1))
+lines!(reactionAxis, u_vals / x_scale^2, R.(u_vals, γ, Ref([K, 1.0])) / t_scale, color = :red, linestyle = :dash)
+
+soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_data, bgp)
+err_CI = error_comp(bgp, pde_data, x_pde, t_pde, u_pde)
+M = length(bgp.pde_setup.δt)
+dataAxis = Axis(resultFigures[3, 1], xlabel = L"$x$ [μm]", ylabel = L"$u(x, t)$ [cells/μm²]", title = @sprintf("(g): PDE curves with spline ICs\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign = :left)
+@views for j in 1:M
+    lines!(dataAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color = colors[j])
+    band!(dataAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color = (colors[j], 0.35))
+    CairoMakie.scatter!(dataAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color = colors[j], markersize = 3)
+end
+soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_gp, bgp)
+err_CI = error_comp(bgp, pde_gp, x_pde, t_pde, u_pde)
+M = length(bgp.pde_setup.δt)
+GPAxis = Axis(resultFigures[3, 2], xlabel = L"$x$ [μm]", ylabel = L"$u(x, t)$ [cells/μm²]", title = @sprintf("(h): PDE curves with sampled ICs\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign = :left)
+@views for j in 1:M
+    lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color = colors[j])
+    band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color = (colors[j], 0.35))
+    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color = colors[j], markersize = 3)
+end
+Legend(resultFigures[4, 1:3], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation = :horizontal, labelsize = fontsize, titlesize = fontsize, titleposition = :left)
+save("figures/simulation_study_final_fisher_kolmogorov_results.pdf", resultFigures, px_per_unit = 2)
