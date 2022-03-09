@@ -159,6 +159,7 @@ See [`bootstrap_helper`](@ref) for details and [`bootstrap_gp`](@ref) for its us
 - `Du`: Cache array for computing `D(u)`.
 - `D′u`: Cache array for computing `D′(u)`.
 - `Ru`: Cache array for computing `R(u)`.
+- `R′u`: Cache array for computing `R′(u)`.
 - `TuP`: Cache array for storing the values of the delay function at the unscaled times (for the `"PDE"` loss function).
 - `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"PDE"` loss function).
 - `D′uP`: Cache array for storing the values of the derivative of the diffusion function at the estimated density values (for the `"PDE"` loss function).
@@ -182,6 +183,7 @@ function preallocate_eqlearn(num_restarts, meshPoints, δt, finalTime, Xₛ, tt,
     else
         stacked_params = mean(hcat(lowers, uppers); dims = 2) # Use average of lower/upper bounds for parameters when no restarts are required
     end
+
     # PDE
     N = length(meshPoints)
     Δx = diff(meshPoints)
@@ -276,6 +278,7 @@ Optimisation:
 - `Du`: Cache array for computing `D(u)`.
 - `D′u`: Cache array for computing `D′(u)`.
 - `Ru`: Cache array for computing `R(u)`.
+- `R′u`: Cache array for computing `R′(u)`.
 - `TuP`: Cache array for storing the values of the delay function at the unscaled times (for the `"PDE"` loss function).
 - `DuP`: Cache array for storing the values of the diffusion function at the estimated density values (for the `"PDE"` loss function).
 - `D′uP`: Cache array for storing the values of the derivative of the diffusion function at the estimated density values (for the `"PDE"` loss function).
