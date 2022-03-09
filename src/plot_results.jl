@@ -260,13 +260,14 @@ function curve_results(bgp::BootResults; level = 0.05, fontsize = 23, x_scale = 
 end
 
 """
-    function pde_values(solns_all, bgp::BootResults; level = 0.05)
+    function pde_values(solns_all, bgp::Union{BootResults, BasisBootResults}; level = 0.05)
 
 Plots the solutions to the PDEs corresponding to the bootstrap samples of [`bootstrap_gp`](@ref) using 
 the computed solutins in [`boot_pde_solve`](@ref).
 
 # Arguments
 - `solns_all`: The solutions to the PDEs for each bootstrap iteration. 
+- `bgp::Union{BootResults, BasisBootResults}`: Bootstrapping results.
 
 # Keyword Arguments 
 - `level = 0.05`: The significance level for computing the credible intervals for the parameter values. 
@@ -276,7 +277,7 @@ the computed solutins in [`boot_pde_solve`](@ref).
 - `soln_vals_lowers`: Lower confidence interval for solution values.
 - `soln_vals_upper`: Upper confidence interval for solution values.
 """
-function pde_values(solns_all, bgp::BootResults; level = 0.05)
+function pde_values(solns_all, bgp::Union{BootResults, BasisBootResults}; level = 0.05)
     N = length(bgp.pde_setup.meshPoints)
     M = length(bgp.pde_setup.δt)
     soln_vals_mean = zeros(N, M)
@@ -289,7 +290,7 @@ function pde_values(solns_all, bgp::BootResults; level = 0.05)
 end
 
 """
-    pde_results(x_pde, t_pde u_pde, solns_all, bgp::BootResults; <keyword arguments>)
+    pde_results(x_pde, t_pde u_pde, solns_all, bgp::Union{BootResults, BasisBootResults}; <keyword arguments>)
 
 Plots the solutions to the PDEs corresponding to the bootstrap samples of [`bootstrap_gp`](@ref) using 
 the computed solutins in [`boot_pde_solve`](@ref).
@@ -299,7 +300,7 @@ the computed solutins in [`boot_pde_solve`](@ref).
 - `t_pde`: The temporal data to plot as points.
 - `u_pde`: The density data to plot as points. 
 - `solns_all`: The solutions to the PDEs for each bootstrap iteration. 
-- `bgp::BootResults`: A [`BootResults`](@ref) struct containing the results from [`bootstrap_gp`](@ref).
+- `bgp::Union{BootResults, BasisBootResults}`: A [`BootResults`](@ref) or [`BasisBootResults`](@ref) struct containing the results from [`bootstrap_gp`](@ref) or [`basis_bootstrap_gp`](@ref), respectively.
 
 # Keyword Arguments 
 - `colors = [:black, :blue, :red, :magenta, :green]`: A list of colors for colouring the solutions at each time.
@@ -311,7 +312,7 @@ the computed solutins in [`boot_pde_solve`](@ref).
 # Outputs 
 - `pdeSolutionPlots_BGP`: The plot of the PDE solutions.
 """
-function pde_results(x_pde, t_pde, u_pde, solns_all, bgp::BootResults;
+function pde_results(x_pde, t_pde, u_pde, solns_all, bgp::Union{BootResults, BasisBootResults};
     colors = [:black, :blue, :red, :magenta, :green], level = 0.05, fontsize = 23,
     x_scale = 1.0, t_scale = 1.0)
     ## Setup
