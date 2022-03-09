@@ -109,7 +109,7 @@ function jacdegeneral!(J, u, p, t)
 end
 
 """
-    compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp::BootResults, N, B, meshPoints)
+    compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp::Union{BootResults, BasisBootResults}, N, B, meshPoints)
 
 Computes initial conditions for the bootstrap iterates in `bgp`. See also [`bootstrap_gp`](@ref).
 
@@ -118,7 +118,7 @@ Computes initial conditions for the bootstrap iterates in `bgp`. See also [`boot
 - `t_pde`: The temporal data used for fitting the original Gaussian process. See also [`fit_GP`](@ref).
 - `u_pde`: The density data used for fitting the original Gaussian process. See also [`fit_GP`](@ref).
 - `ICType`: The type of initial condition to use. If `ICType == "data"` then the initial condition is simply a spline through the data, and if `ICType == "gp"` then the initial condition is a sample of the underlying Gaussian process in `bgp.gp`.
-- `bgp::BootResults`: The bootstrapping results of type [`BootResults`](@ref). See [`bootstrap_gp`](@ref).
+- `bgp::Union{BootResults, BasisBootResults}`: The bootstrapping results.
 - `N`: The number of mesh points.
 - `B`: The number of bootstrap iterations.
 - `meshPoints`: The spatial mesh.
@@ -126,7 +126,7 @@ Computes initial conditions for the bootstrap iterates in `bgp`. See also [`boot
 # Outputs 
 - `initialCondition_all`: The initial condition to use for each bootstrap iterate, with the `j`th column corresponding to the `j`th bootstrap sample.
 """
-function compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp::BootResults, N, B, meshPoints)
+function compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp::Union{BootResults, BasisBootResults}, N, B, meshPoints)
     @assert ICType ∈ ["data", "gp"] "The provided ICType must be either \"data\" or \"gp\"."
     initialCondition_all = zeros(N, B)
     @views if ICType == "data"
@@ -145,11 +145,11 @@ function compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp::BootResult
 end
 
 """
-    compute_initial_conditions(x_pde, t_pde, u_pde, bgp::BootResults)
+    compute_initial_conditions(x_pde, t_pde, u_pde, bgp::Union{BootResults, BasisBootResults})
 
 Method for calling [`compute_initial_conditions`] when providing only `bgp` and the data. 
 """
-function compute_initial_conditions(x_pde, t_pde, u_pde, bgp::BootResults, ICType)
+function compute_initial_conditions(x_pde, t_pde, u_pde, bgp::Union{BootResults, BasisBootResults}, ICType)
     return compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp, length(bgp.pde_setup.meshPoints), bgp.bootstrap_setup.B, bgp.pde_setup.meshPoints)
 end
 
