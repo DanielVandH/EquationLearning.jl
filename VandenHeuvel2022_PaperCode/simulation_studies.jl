@@ -981,6 +981,68 @@ end
 error_fig = Figure(fontsize = fontsize)
 ax = Axis(error_fig[1, 1], xlabel = L"\tau_1", ylabel = "Error")
 for i in 1:length(τ₂)
-    lines!(ax, τ₁, errs[:, i], label = @sprintf("%i", trunc(Int64, τ₂[i]*100)))   
+    lines!(ax, τ₁, errs[:, i], label = @sprintf("%i%%", trunc(Int64, τ₂[i]*100)))   
+end
+error_fig[1, 2] = Legend(error_fig, ax, L"\tau_2")
+
+#####################################################################
+## Study VI: Data thresholding on the Fisher-Kolmogorov model of Study I 
+#####################################################################
+# Generate the data
+Random.seed!(5103821)
+dat = assay_data[6]
+x₀ = dat.Position[dat.Time.==0.0]
+u₀ = dat.AvgDens[dat.Time.==0.0]
+T = (t, α, p) -> 1.0 / (1.0 + exp(-α[1] * p[1] - α[2] * p[2] * t))
+D = (u, β, p) -> β[1] * p[2] * (u / p[1])
+D′ = (u, β, p) -> β[1] * p[2] / p[1]
+R = (u, γ, p) -> γ[1] * p[2] * u * (1.0 - u / p[1])
+R′ = (u, γ, p) -> γ[1] * p[2] - 2.0 * γ[1] * p[2] * u / p[1]
+α = [-4.0651, 0.4166 * t_scale]
+β = [2900.0] * t_scale / x_scale^2
+γ = [0.0951] * t_scale
+T_params = [1.0, 1.0]
+D_params = [K, 1.0]
+R_params = [K, 1.0]
+x, t, u, datgp = EquationLearning.generate_data(x₀, u₀, T, D, R, D′, R′, α, β, γ, δt, finalTime; N, LHS, RHS, alg, N_thin, num_restarts, D_params, R_params, T_params)
+x_pde = copy(x)
+t_pde = copy(t)
+u_pde = copy(u)
+σ = log.([1e-1, 2std(u)])
+σₙ = log.([1e-5, 2std(u)])
+gp, μ, L = EquationLearning.precompute_gp_mean(x, t, u, ℓₓ, ℓₜ, σ, σₙ, nugget, GP_Restarts, bootstrap_setup)
+gp_setup = EquationLearning.GP_Setup(u; ℓₓ, ℓₜ, σ, σₙ, GP_Restarts, μ, L, nugget, gp)
+
+# Setup 
+α₀ = [1.0, 1.0]
+β₀ = [1.0]
+γ₀ = [1.0]
+bootstrap_setup = @set bootstrap_setup.B = 50
+bootstrap_setup = @set bootstrap_setup.show_losses = false
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 1
+lowers = [0.7, 0.7, 0.7, 0.7]
+uppers = [1.3, 1.3, 1.3, 1.3]
+T_params = copy(α)
+D_params = [K, β[1]]
+R_params = [K, γ[1]]
+
+# Data thresholding 
+τ₁ = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0] / 100.0
+τ₂ = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0] / 100.0
+errs = zeros(length(τ₁), length(τ₂))
+for (j, τ2) in enumerate(τ₂)
+    for (i, τ1) in enumerate(τ₁)
+        bootstrap_setup = @set bootstrap_setup.τ = (τ1, τ2)
+        bgp = bootstrap_gp(x, t, u, T, D, D′, R, R′, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
+        pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
+        errs[i, j] = error_comp(bgp, pde_gp, x_pde, t_pde, u_pde; compute_mean = true)
+        @show (i, j)
+    end
+end
+
+error_fig = Figure(fontsize = fontsize)
+ax = Axis(error_fig[1, 1], xlabel = L"\tau_1", ylabel = "Error")
+for i in 1:length(τ₂)
+    lines!(ax, τ₁, errs[:, i], label = @sprintf("%i%%", trunc(Int64, τ₂[i]*100)))   
 end
 error_fig[1, 2] = Legend(error_fig, ax, L"\tau_2")
