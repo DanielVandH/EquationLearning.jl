@@ -132,11 +132,12 @@ The error measure used is `median(100 * (sum of absolute errors) / maximum(u))`.
 
 # Keyword Arguments 
 - `level = 0.05`: Level for the confidence interval.
+- `compute_mean = false`: Whether to only report the mean.
 
 # Outputs 
 - `err_CI`: `100(1-level)%` confidence interval for the error.
 """
-function error_comp(bgp, solns_all, x, t, u; level = 0.05)
+function error_comp(bgp, solns_all, x, t, u; level = 0.05, compute_mean = false)
     B = size(bgp.zvals, 2)
     errs = Vector{Float64}(undef, B)
     time_values = Array{Bool}(undef, length(t), length(bgp.pde_setup.δt))
@@ -148,18 +149,21 @@ function error_comp(bgp, solns_all, x, t, u; level = 0.05)
         @views iterate_idx[j] = findall(time_values[:, j])
     end
     store_err = Vector{Float64}(undef, length(x))
-    for b in 1:B 
+    for b in 1:B
         idx = 1
         for j in 1:length(unique(t))
             for (k, i) in enumerate(iterate_idx[j])
                 exact = u[i]
                 approx = solns_all[closest_idx[j][k], b, j]
-                store_err[idx] = 100abs(exact - approx)/(maximum(u))
+                store_err[idx] = 100abs(exact - approx) / (maximum(u))
                 idx += 1
             end
         end
         errs[b] = median(store_err)
-    end 
-    err_CI = [quantile(errs, level / 2), quantile(errs, 1 - level/2)]
-    return err_CI
+    end
+    if compute_mean
+        return mean(errs)
+    else
+        return [quantile(errs, level / 2), quantile(errs, 1 - level / 2)]
+    end
 end
