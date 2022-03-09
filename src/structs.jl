@@ -208,7 +208,7 @@ Structure for storing bootstrapping results. See [`bootstrap_gp`](@ref).
 - `D`: The diffusion function, given in the form `D(u, β, D_params)`.
 - `D′`: The derivative of the diffusion function, given in the form `D′(u, β, D_params)`.
 - `R`: The reaction function, given in the form `R(u, γ, R_params)`.
-- `R′`: The reaction function, given in the form `R′(u, γ, R_params)`.
+- `R′`: The derivative of the reaction function, given in the form `R′(u, γ, R_params)`.
 - `D_params`: Parameters for the diffusion function.
 - `R_params`: Parameters for the reaction function. 
 - `T_params`: Parameters for the delay function.
@@ -234,6 +234,52 @@ struct BootResults
     D_params
     R_params
     T_params
+    μ::Vector{Float64}
+    L::LowerTriangular{Float64}
+    gp_setup::GP_Setup
+    bootstrap_setup::Bootstrap_Setup 
+    pde_setup::PDE_Setup
+end
+
+"""
+    struct BasisBootResults
+
+Structure for storing bootstrapping results from the basis approach. See [`basis_bootstrap_gp`](@ref).
+
+# Fields 
+- `diffusionBases`: The estimated diffusion parameters. Each column corresponds to a single bootstrap iteration.
+- `reactionBases`: The estimated reaction parameters. Each column corresponds to a single bootstrap iteration.
+- `gp`: The fitted Gaussian process. See [`fit_gp`](@ref).
+- `zvals`: The simulated normal variables from `N(0, I)` used for drawing from the Gaussian process `gp`. See [`draw_gp!`](@ref).
+- `Xₛ`: The test matrix for the bootstrapping grid data, given in the scale [0, 1].
+- `Xₛⁿ`: The unscaled form of `Xₛ`.
+- `bootₓ`: The spatial bootstrapping grid.
+- `bootₜ`: The temporal bootstrapping grid.
+- `D`: The diffusion basis functions, each given in the form `φ(u, D_params)`.
+- `D′`: The derivative of the diffusion basis functions.
+- `R`: The reaction basis function, each given in the form `ψ(u, R_params)`.
+- `R′`: The derivative of the reaction basis functions.
+- `D_params`: Parameters for the diffusion function.
+- `R_params`: Parameters for the reaction function. 
+- `gp_setup`: The GP setup used; see [`GP_Setup`](@ref).
+- `bootstrap_setup`: The bootstrap setup used; see [`bootstrap_setup`](@ref).
+- `pde_setup`: The PDE setup used; see [`pde_setup`](@ref).
+"""
+struct BasisBootResults
+    diffusionBases::Array{Float64}
+    reactionBases::Array{Float64}
+    gp::GPBase
+    zvals::Array{Float64}
+    Xₛ::Array{Float64}
+    Xₛⁿ::Array{Float64}
+    bootₓ::Vector{Float64}
+    bootₜ::Vector{Float64}
+    D::Vector{Function}
+    D′::Vector{Function}
+    R::Vector{Function}
+    R′::Vector{Function}
+    D_params
+    R_params
     μ::Vector{Float64}
     L::LowerTriangular{Float64}
     gp_setup::GP_Setup
