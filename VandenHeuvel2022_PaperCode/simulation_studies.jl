@@ -756,3 +756,57 @@ bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 1
 bgp = bootstrap_gp(x, t, u, T, D, D′, R, R′, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
 pde_data = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "data")
 pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
+
+# Look at the new results for the affine diffusion model
+unscaled_β = β * x_scale^2 / t_scale
+unscaled_γ = γ / t_scale
+trv, dr, rr, tt, d, r, delayCIs, diffusionCIs, reactionCIs = density_values(bgp; level = 0.05, diffusion_scales = D_params[2:end] .* x_scale^2 / t_scale, reaction_scales = R_params[2] / t_scale)
+resultFigures = Figure(fontsize = fontsize, resolution = (1200, 800))
+diffusionDensityAxes = Vector{Axis}(undef, d)
+reactionDensityAxes = Vector{Axis}(undef, r)
+for i = 1:d
+    diffusionDensityAxes[i] = Axis(resultFigures[1, i], xlabel = L"$\beta_%$i$ (μm²/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i], diffusionCIs[i, 1], diffusionCIs[i, 2]),
+        titlealign = :left)
+    densdat = KernelDensity.kde(dr[i, :])
+    vlines!(diffusionDensityAxes[i], unscaled_β[i], color = :red, linestyle = :dash)
+    in_range = minimum(dr[i, :]) .< densdat.x .< maximum(dr[i, :])
+    lines!(diffusionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = diffusionCIs[i, 1] .< densdat.x .< diffusionCIs[i, 2]
+    band!(diffusionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+for i = 1:r
+    reactionDensityAxes[i] = Axis(resultFigures[1, i+2], xlabel = L"$\gamma_%$i$ (1/h)", ylabel = "Probability density",
+        title = @sprintf("(%s): 95%% CI: (%.4g, %.4g)", alphabet[i+2], reactionCIs[i, 1], reactionCIs[i, 2]),
+        titlealign = :left)
+    densdat = kde(rr[i, :])
+    vlines!(reactionDensityAxes[i], unscaled_γ[i], color = :red, linestyle = :dash)
+    in_range = minimum(rr[i, :]) .< densdat.x .< maximum(rr[i, :])
+    lines!(reactionDensityAxes[i], densdat.x[in_range], densdat.density[in_range], color = :blue, linewidth = 3)
+    CI_range = reactionCIs[i, 1] .< densdat.x .< reactionCIs[i, 2]
+    band!(reactionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+end
+
+Tu_vals, Du_vals, Ru_vals, u_vals, t_vals = curve_values(bgp; level = 0.05, x_scale = x_scale, t_scale = t_scale)
+diffusionAxis = Axis(resultFigures[2, 1], xlabel = L"$u$ (cells/μm²)", ylabel = L"$D(u)$ (μm²/h)", title = "(e): Diffusion curve", linewidth = 1.3, linecolor = :blue, titlealign = :left)
+lines!(diffusionAxis, u_vals / x_scale^2, Du_vals[1])
+band!(diffusionAxis, u_vals / x_scale^2, Du_vals[3], Du_vals[2], color = (:blue, 0.35))
+trueD = (u, β, p) -> β[1] * p[2] + β[2] * p[3] * (u / p[1]) + β[3] * p[4] * (u / p[1])^2
+lines!(diffusionAxis, u_vals / x_scale^2, trueD.(u_vals, Ref(β), Ref([K, 1.0, 1.0, 1.0])) .* x_scale^2 / t_scale, color = :red, linestyle = :dash)
+reactionAxis = Axis(resultFigures[2, 2], xlabel = L"$u$ (cells/μm²)", ylabel = L"$R(u)$ (1/h)", title = "(f): Reaction curve", linewidth = 1.3, linecolor = :blue, titlealign = :left)
+lines!(reactionAxis, u_vals / x_scale^2, Ru_vals[1])
+band!(reactionAxis, u_vals / x_scale^2, Ru_vals[3], Ru_vals[2], color = (:blue, 0.35))
+lines!(reactionAxis, u_vals / x_scale^2, R.(u_vals, γ, Ref([K, 1.0])) / t_scale, color = :red, linestyle = :dash)
+
+soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_gp, bgp)
+err_CI = error_comp(bgp, pde_gp, x_pde, t_pde, u_pde)
+M = length(bgp.pde_setup.δt)
+GPAxis = Axis(resultFigures[2, 3], xlabel = L"$x$ (μm)", ylabel = L"$u(x, t)$ (cells/μm²)", title = @sprintf("(h): PDE curves with sampled ICs\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign = :left)
+@views for j in 1:M
+    lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color = colors[j])
+    band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color = (colors[j], 0.35))
+    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color = colors[j], markersize = 3)
+end
+Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation = :vertical, labelsize = fontsize, titlesize = fontsize, titleposition = :top)
+save("figures/simulation_study_final_quadratic_affine_diffusion_results.pdf", resultFigures, px_per_unit = 2)
+
