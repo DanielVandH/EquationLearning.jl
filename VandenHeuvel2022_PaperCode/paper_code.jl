@@ -17,19 +17,18 @@ using LinearAlgebra         # For setting number of threads to prevent StackOver
 using Setfield              # For modifying immutable structs
 include("set_parameters.jl")
 
-
 #####################################################################
 ## Set some global parameters 
 #####################################################################
 
-fontsize = 23
+fontsize = 14
 colors = [:black, :blue, :red, :magenta, :green]
 alphabet = join('a':'z')
-legendentries = OrderedDict("0.0" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[1]),
-    "0.5" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[2]),
-    "1.0" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[3]),
-    "1.5" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[4]),
-    "2.0" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[5]))
+legendentries = OrderedDict("0" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[1]),
+    "12" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[2]),
+    "24" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[3]),
+    "36" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[4]),
+    "48" => LineElement(linestyle = nothing, linewidth = 2.0, color = colors[5]))
 LinearAlgebra.BLAS.set_num_threads(1)
 
 #####################################################################
@@ -49,6 +48,8 @@ t_scale = 24.0   # hr ↦ day
 for i = 1:6
     file_name = string("data/CellDensity_", 10 + 2 * (i - 1), ".csv")
     dat = prepare_data(file_name)
+    dat.Position = convert.(Float64, dat.Position)
+    dat.Time = convert.(Float64, dat.Time)
     dat.Position ./= x_scale
     dat.Dens1 .*= x_scale^2
     dat.Dens2 .*= x_scale^2
@@ -68,20 +69,20 @@ jin_assay_data_fig = Figure(fontsize = fontsize)
 
 for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(assay_plots)))
     data = assay_data[k]
-    assay_plots[i, j] = Axis(jin_assay_data_fig[i, j], xlabel = "Position (mm)", ylabel = "Cell density (cells/mm²)",
+    assay_plots[i, j] = Axis(jin_assay_data_fig[i, j], xlabel = "Position (μm)", ylabel = "Cell density\n(cells/μm²)",
         title = "($(alphabet[k])): $(10+2*(k-1)),000 cells per well",
         titlealign = :left)
     for (s, T) in enumerate(unique(data.Time))
-        scatter!(assay_plots[i, j], data.Position[data.Time.==T], data.Dens1[data.Time.==T], color = colors[s], markersize = 3)
-        scatter!(assay_plots[i, j], data.Position[data.Time.==T], data.Dens2[data.Time.==T], color = colors[s], markersize = 3)
-        scatter!(assay_plots[i, j], data.Position[data.Time.==T], data.Dens3[data.Time.==T], color = colors[s], markersize = 3)
-        lines!(assay_plots[i, j], data.Position[data.Time.==T], data.AvgDens[data.Time.==T], color = colors[s])
+        scatter!(assay_plots[i, j], data.Position[data.Time.==T] * x_scale, data.Dens1[data.Time.==T] / x_scale^2, color = colors[s], markersize = 3)
+        scatter!(assay_plots[i, j], data.Position[data.Time.==T] * x_scale, data.Dens2[data.Time.==T] / x_scale^2, color = colors[s], markersize = 3)
+        scatter!(assay_plots[i, j], data.Position[data.Time.==T] * x_scale, data.Dens3[data.Time.==T] / x_scale^2, color = colors[s], markersize = 3)
+        lines!(assay_plots[i, j], data.Position[data.Time.==T] * x_scale, data.AvgDens[data.Time.==T] /x_scale^2, color = colors[s])
     end
-    hlines!(assay_plots[i, j], K, color = :black)
-    ylims!(assay_plots[i, j], 0.0, 2000.0)
+    hlines!(assay_plots[i, j], K /x_scale^2, color = :black)
+    ylims!(assay_plots[i, j], 0.0, 0.002)
 end
 
-Legend(jin_assay_data_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], "Time (d)", orientation = :horizontal, labelsize = fontsize, titlesize = fontsize, titleposition = :left)
+Legend(jin_assay_data_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation = :horizontal, labelsize = fontsize, titlesize = fontsize, titleposition = :left)
 save("figures/jin_assay_data.pdf", jin_assay_data_fig, px_per_unit = 2)
 
 #####################################################################
@@ -94,26 +95,26 @@ gp_plots = Array{Axis}(undef, 3, 2)
 
 for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(gp_plots)))
     data = assay_data[k]
-    x = repeat(data.Position, outer = 3)
+    x = repeat(data.Position, outer = 3) 
     t = repeat(data.Time, outer = 3)
     u = vcat(data.Dens1, data.Dens2, data.Dens3)
     gp_dat = EquationLearning.fit_GP(x, t, u)
     μ, Σ = predict_f(gp_dat, [EquationLearning.scale_unit(vec(data.Position)'); EquationLearning.scale_unit(vec(data.Time)')])
     lower = μ .- 2sqrt.(Σ)
     upper = μ .+ 2sqrt.(Σ)
-    gp_plots[i, j] = Axis(jin_assay_data_gp_bands_fig[i, j], xlabel = "Position (mm)", ylabel = "Cell density (cells/mm²)",
+    gp_plots[i, j] = Axis(jin_assay_data_gp_bands_fig[i, j], xlabel = "Position (μm)", ylabel = "Cell density\n(cells/μm²)",
         title = "($(alphabet[k])): $(10+2*(k-1)),000 cells per well",
         titlealign = :left)
     for (s, T) in enumerate(unique(t))
-        scatter!(gp_plots[i, j], x[t.==T], u[t.==T], color = colors[s], markersize = 3)
-        lines!(gp_plots[i, j], data.Position[data.Time.==T], μ[data.Time.==T], color = colors[s])
-        band!(gp_plots[i, j], data.Position[data.Time.==T], upper[data.Time.==T], lower[data.Time.==T], color = (colors[s], 0.35))
+        scatter!(gp_plots[i, j], x[t.==T] * x_scale, u[t.==T] / x_scale^2, color = colors[s], markersize = 3)
+        lines!(gp_plots[i, j], data.Position[data.Time.==T] * x_scale, μ[data.Time.==T] / x_scale^2, color = colors[s])
+        band!(gp_plots[i, j], data.Position[data.Time.==T] * x_scale, upper[data.Time.==T] / x_scale^2, lower[data.Time.==T] / x_scale^2, color = (colors[s], 0.35))
     end
-    hlines!(gp_plots[i, j], K, color = :black)
-    ylims!(gp_plots[i, j], 0.0, 2000.0)
+    hlines!(gp_plots[i, j], K / x_scale^2, color = :black)
+    ylims!(gp_plots[i, j], 0.0, 0.002)
 end
 
-Legend(jin_assay_data_gp_bands_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], "Time (d)", orientation = :horizontal, labelsize = fontsize, titlesize = fontsize, titleposition = :left)
+Legend(jin_assay_data_gp_bands_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation = :horizontal, labelsize = fontsize, titlesize = fontsize, titleposition = :left)
 save("figures/jin_assay_data_gp_plots.pdf", jin_assay_data_gp_bands_fig, px_per_unit = 2)
 
 #####################################################################
@@ -138,15 +139,14 @@ for (k, (i, j)) in enumerate(Tuple.(CartesianIndices(spacetime_plots)))
     t̃_rng = EquationLearning.scale_unit(T_rng)
     Xₛ = [vec(x̃_rng)'; vec(t̃_rng)']
     μ, _ = predict_f(gp_dat, Xₛ)
-    spacetime_plots[i, j] = Axis(jin_assay_data_gp_bands_fig_spacetime[i, j], xlabel = "Position (mm)", ylabel = "Time (d)",
+    spacetime_plots[i, j] = Axis(jin_assay_data_gp_bands_fig_spacetime[i, j], xlabel = "Position (μm)", ylabel = "Time (h)",
         title = "($(alphabet[k])): $(10+2*(k-1)),000 cells per well",
         titlealign = :left)
-    heatmap!(spacetime_plots[i, j], X_rng, T_rng, μ; colorrange = (0.0, 2000.0))
+    heatmap!(spacetime_plots[i, j], X_rng * x_scale, T_rng * t_scale, μ / x_scale^2; colorrange = (0.0, 0.002))
 end
 
-cb = Colorbar(jin_assay_data_gp_bands_fig_spacetime[1:3, 3])
-cb.colorrange = (0.0, 2000.0)
-cb.label = "Cell density (cells/mm²)"
+cb = Colorbar(jin_assay_data_gp_bands_fig_spacetime[1:3, 3], colorrange = (0, 0.002))
+cb.label = "Cell density (cells/μm²)"
 save("figures/jin_assay_data_spacetime_plots.pdf", jin_assay_data_gp_bands_fig_spacetime, px_per_unit = 2)
 
 #####################################################################
