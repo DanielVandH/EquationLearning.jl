@@ -965,8 +965,8 @@ uppers = [1.3, 1.3]
 D_params = [310.0] * t_scale / x_scale^2
 R_params = [K, 0.044 * t_scale]
 
-τ₁ = [0.0, 1.0, 2.0, 5.0, 10.0, 15.0] / 100.0
-τ₂ = [0.0, 1.0, 2.0, 5.0, 10.0, 15.0] / 100.0
+τ₁ = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0] / 100.0
+τ₂ = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0] / 100.0
 errs = zeros(length(τ₁), length(τ₂))
 for (j, τ2) in enumerate(τ₂)
     for (i, τ1) in enumerate(τ₁)
@@ -974,5 +974,13 @@ for (j, τ2) in enumerate(τ₂)
         bgp = bootstrap_gp(x, t, u, T, D, D′, R, R′, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
         pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
         errs[i, j] = error_comp(bgp, pde_gp, x_pde, t_pde, u_pde; compute_mean = true)
+        @show (i, j)
     end
 end
+
+error_fig = Figure(fontsize = fontsize)
+ax = Axis(error_fig[1, 1], xlabel = L"\tau_1", ylabel = "Error")
+for i in 1:length(τ₂)
+    lines!(ax, τ₁, errs[:, i], label = @sprintf("%i", trunc(Int64, τ₂[i]*100)))   
+end
+error_fig[1, 2] = Legend(error_fig, ax, L"\tau_2")
