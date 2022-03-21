@@ -61,35 +61,36 @@ function generate_data(x₀, u₀, T, D, R, D′, R′, α, β, γ, δt, finalTi
     end
 
     # Fit a smooth curve using GPs 
-    meanFunc = MeanZero()
-    covFunc = SE(2.0, 2.0)
-    x₀ = Matrix(vec(x₀)')
-    u₀ = vec(u₀)
-    x_min = minimum(x₀)
-    x_rng = maximum(x₀) - x_min
-    X = (x₀ .- x_min) / x_rng
-    gp = GPE(X, u₀, meanFunc, covFunc, 2.0)
-    plan, _ = LHCoptim(num_restarts, length(GaussianProcesses.get_params(gp)), 2000)
-    new_params = scaleLHC(plan, [(log(1e-4), log(1.0)), (log(1e-5), log(2std(u₀))), (log(1e-5), log(2std(u₀)) + 1e-5)])'
-    obj_values = zeros(num_restarts)
-    for j = 1:num_restarts
-        try
-            @views GaussianProcesses.set_params!(gp, new_params[:, j])
-            GaussianProcesses.optimize!(gp)
-            obj_values[j] = gp.target
-        catch err
-            println(err)
-            obj_values[j] = -Inf
-        end
-    end
-    opt_model = findmax(obj_values)[2]
-    @views GaussianProcesses.set_params!(gp, new_params[:, opt_model])
-    GaussianProcesses.optimize!(gp)
+    #meanFunc = MeanZero()
+    #covFunc = SE(2.0, 2.0)
+    #x₀ = Matrix(vec(x₀)')
+    #u₀ = vec(u₀)
+    #x_min = minimum(x₀)
+    #x_rng = maximum(x₀) - x_min
+    #X = (x₀ .- x_min) / x_rng
+    #gp = GPE(X, u₀, meanFunc, covFunc, 2.0)
+    #plan, _ = LHCoptim(num_restarts, length(GaussianProcesses.get_params(gp)), 2000)
+    #new_params = scaleLHC(plan, [(log(1e-4), log(1.0)), (log(1e-5), log(2std(u₀))), (log(1e-5), log(2std(u₀)) + 1e-5)])'
+    #obj_values = zeros(num_restarts)
+    #for j = 1:num_restarts
+    #    try
+    #        @views GaussianProcesses.set_params!(gp, new_params[:, j])
+    #        GaussianProcesses.optimize!(gp)
+    #        obj_values[j] = gp.target
+    #    catch err
+    #        println(err)
+    #        obj_values[j] = -Inf
+    #    end
+    #end
+    #opt_model = findmax(obj_values)[2]
+    #@views GaussianProcesses.set_params!(gp, new_params[:, opt_model])
+    #GaussianProcesses.optimize!(gp)
 
     # Generate the data
     meshPoints = LinRange(extrema(x₀)..., N)
-    initialCondition, _ = predict_f(gp, (vec(meshPoints) .- x_min) / x_rng)
-    initialCondition .= max.(initialCondition, 0.0)
+    initialCondition = Dierckx.Spline1D(vec(x₀), vec(u₀); k = 1)(meshPoints)
+    #initialCondition, _ = predict_f(gp, (vec(meshPoints) .- x_min) / x_rng)
+    #initialCondition .= max.(initialCondition, 0.0)
 
     # Define geometry
     a₀, b₀, c₀ = LHS
@@ -106,12 +107,12 @@ function generate_data(x₀, u₀, T, D, R, D′, R′, α, β, γ, δt, finalTi
 
     # Solve 
     tspan = (0.0, finalTime)    
-    ode_fnc = ODEFunction(sysdegeneral!)
-    prob = ODEProblem(ode_fnc, initialCondition, tspan, p, jac_prototype = Tridiagonal(zeros(N, N)))
-    sol = DifferentialEquations.solve(prob, alg; saveat = δt)
+    #ode_fnc = ODEFunction(sysdegeneral!)
+    prob = ODEProblem(sysdegeneral!, initialCondition, tspan, p)
+    sol = DifferentialEquations.solve(prob, CVODE_BDF(linear_solver = :Band, jac_upper = 1, jac_lower = 1); saveat = δt)
     u = abs.(hcat(sol.u...))
     # Add noise 
-    u .+= exp(gp.logNoise.value) .* randn(size(u))
+    u .+= maximum(u)/100 .* randn(size(u)) 
     u .= max.(u, 0.0)
     # Thin the data 
     thin_idx = 1:trunc(Int64, N / N_thin):N
@@ -121,5 +122,5 @@ function generate_data(x₀, u₀, T, D, R, D′, R′, α, β, γ, δt, finalTi
     x = repeat(meshPoints[thin_idx], outer = length(sol.t))
     t = repeat(sol.t, inner = length(thin_idx))
     u = vec(u[thin_idx, :])
-    return x, t, u, gp
+    return x, t, u, []
 end

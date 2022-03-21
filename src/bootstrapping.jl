@@ -96,7 +96,7 @@ that are used for the bootstrapping component. See [`bootstrap_helper`](@ref) fo
 - `ℓz`: Cache array for storing the result of the matrix-vector product `Lz`, where `L` is the Cholesky factor and `z` is a random sample from `N(0, I)`.
 - `zvals`: Matrix for storing the drawn `z` values from `N(0, I)`.
 """
-function preallocate_bootstrap(nₓnₜ, α₀, β₀, γ₀, B)
+function preallocate_bootstrap(nₓnₜ, α₀, β₀, γ₀, B, zvals)
     # Function values
     f = zeros(nₓnₜ)
     fₜ = zeros(nₓnₜ)
@@ -120,7 +120,7 @@ function preallocate_bootstrap(nₓnₜ, α₀, β₀, γ₀, B)
 
     # Drawing samples
     ℓz = zeros(4nₓnₜ) # Storing the matrix-vector product Lz
-    zvals = zeros(4nₓnₜ, B) # Storing the random standard normal variables
+    zvals = isnothing(zvals) ? zeros(4nₓnₜ, B) : zvals # Storing the random standard normal variables
 
     # Return 
     return f, fₜ, fₓ, fₓₓ, ffₜfₓfₓₓ,
@@ -292,14 +292,14 @@ Optimisation:
 - `initialCondition`: Cache array for storing the initial condition over `meshPoints`.
 - `MSE`: Cache array for storing the individual squared errors.
 """
-function bootstrap_helper(x, t, bootₓ, bootₜ, α₀, β₀, γ₀, B, num_restarts, meshPoints, δt, finalTime, gp, lowers, uppers)
+function bootstrap_helper(x, t, bootₓ, bootₜ, α₀, β₀, γ₀, B, num_restarts, meshPoints, δt, finalTime, gp, lowers, uppers, zvals)
     x_min, x_max, t_min, t_max,
     x_rng, t_rng, Xₛ, unscaled_t̃, nₓnₜ = bootstrap_grid(x, t, bootₓ, bootₜ)
     f, fₜ, fₓ, fₓₓ, ffₜfₓfₓₓ,
     f_idx, fₜ_idx, fₓ_idx, fₓₓ_idx,
     tt, d, r,
     delayBases, diffusionBases, reactionBases,
-    ℓz, zvals = preallocate_bootstrap(nₓnₜ, α₀, β₀, γ₀, B)
+    ℓz, zvals = preallocate_bootstrap(nₓnₜ, α₀, β₀, γ₀, B, zvals)
     obj_values, stacked_params,
     N, Δx, V,
     Du, D′u, Ru, R′u, TuP, DuP, D′uP, RuP, RuN,
@@ -323,11 +323,11 @@ end
 
 Method for calling [`bootstrap_helper`](@ref) using the setup structs from [`GP_Setup`](@ref), [`Bootstrap_Setup`](@ref), and [`PDE_Setup`](@ref). 
 """
-function bootstrap_helper(x, t, α₀, β₀, γ₀, lowers, uppers, gp_setup::GP_Setup, bootstrap_setup::Bootstrap_Setup, pde_setup::PDE_Setup)
+function bootstrap_helper(x, t, α₀, β₀, γ₀, lowers, uppers, gp_setup::GP_Setup, bootstrap_setup::Bootstrap_Setup, pde_setup::PDE_Setup, zvals)
     return bootstrap_helper(x, t, bootstrap_setup.bootₓ, bootstrap_setup.bootₜ, α₀, β₀, γ₀,
         bootstrap_setup.B, bootstrap_setup.Optim_Restarts, pde_setup.meshPoints,
         pde_setup.δt, pde_setup.finalTime, gp_setup.gp,
-        lowers, uppers)
+        lowers, uppers, zvals)
 end
 
 """
@@ -338,7 +338,7 @@ end
         bootstrap_setup::Bootstrap_Setup = Bootstrap_Setup(x, t, u),
         optim_setup::Optim.Options = Optim.Options(),
         pde_setup::PDE_Setup = PDE_Setup(x),
-        D_params = nothing, R_params = nothing, T_params = nothing, PDEkwargs...) where {T1<:AbstractVector}
+        D_params = nothing, R_params = nothing, T_params = nothing, zvals = nothing, PDEkwargs...) where {T1<:AbstractVector}
 
 Perform bootstrapping on the data `(x, t, u)` to learn the appropriate functional forms of 
 `(T, D, R)` with uncertainty. 
@@ -378,24 +378,47 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
     bootstrap_setup::Bootstrap_Setup = Bootstrap_Setup(x, t, u),
     optim_setup::Optim.Options = Optim.Options(),
     pde_setup::PDE_Setup = PDE_Setup(x),
-    D_params = nothing, R_params = nothing, T_params = nothing, PDEkwargs...) where {T1<:AbstractVector}
+    D_params = nothing, R_params = nothing, T_params = nothing, zvals = nothing, PDEkwargs...) where {T1<:AbstractVector}
     ## Check provided functions and ODE algorithm are correct
     @assert !(typeof(pde_setup.alg) <: Sundials.SundialsODEAlgorithm) "Automatic differentiation is not compatible with Sundials solvers."
     @assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
-    try
-        D(u[1], β₀, D_params)
-    catch
-        throw("Either the provided vector of diffusion parameters, β₀ = $β₀, is not of adequate size, or D_params = $D_params has been incorrectly specified.")
+    if isnothing(zvals)
+        zvals_provided = false 
+    else
+        zvals_provided = true
+    end
+    if isnothing(D_params)
+        D_params = reshape(repeat([nothing], bootstrap_setup.B), (1, bootstrap_setup.B))
+    end
+    if isnothing(R_params)
+        R_params = reshape(repeat([nothing], bootstrap_setup.B), (1, bootstrap_setup.B))
+    end
+    if isnothing(T_params)
+        T_params = reshape(repeat([nothing], bootstrap_setup.B), (1, bootstrap_setup.B))
+    end
+    if size(D_params) == (length(D_params),)
+        D_params = Matrix((reshape(D_params, (1, length(D_params))) |> (x -> repeat(x, bootstrap_setup.B)))')
+    end
+    if size(R_params) == (length(R_params),)
+        R_params = Matrix((reshape(R_params, (1, length(R_params))) |> (x -> repeat(x, bootstrap_setup.B)))')
+    end
+    if size(T_params) == (length(T_params),)
+        T_params = Matrix((reshape(T_params, (1, length(T_params))) |> (x -> repeat(x, bootstrap_setup.B)))')
     end
     try
-        R(u[1], γ₀, R_params)
+        D(u[1], β₀, D_params[:, 1])
     catch
-        throw("Either the provided vector of reaction parameters, γ₀ = $γ₀, is not of adequate size, or R_params = $R_params has been incorrectly specified.")
+        throw("Either the provided vector of diffusion parameters, β₀ = $β₀, is not of adequate size, or D_params has been incorrectly specified.")
     end
     try
-        T(t[1], α₀, T_params)
+        R(u[1], γ₀, R_params[:, 1])
     catch
-        throw("Either the provided vector of delay parameters, α₀ = $α₀, is not of adequate size, or T_params = $T_params has been incorrectly specified.")
+        throw("Either the provided vector of reaction parameters, γ₀ = $γ₀, is not of adequate size, or R_params has been incorrectly specified.")
+    end
+    try
+        T(t[1], α₀, T_params[:, 1])
+    catch
+        throw("Either the provided vector of delay parameters, α₀ = $α₀, is not of adequate size, or T_params has been incorrectly specified.")
     end
 
     ## Compute indices for finding nearest points in the spatial mesh to the actual spatial data x, along with indices for specific values of time.
@@ -423,7 +446,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
     N, Δx, V,
     Du, D′u, Ru, R′u, TuP, DuP, D′uP, RuP, RuN,
     SSEArray, Xₛ₀, IC1,
-    initialCondition, MSE = bootstrap_helper(x, t, α₀, β₀, γ₀, lowers, uppers, gp_setup, bootstrap_setup, pde_setup)
+    initialCondition, MSE = bootstrap_helper(x, t, α₀, β₀, γ₀, lowers, uppers, gp_setup, bootstrap_setup, pde_setup, zvals)
 
     ## Compute the mean vector and Cholesky factor for the joint Gaussian process of the function and its derivatives 
     if ismissing(gp_setup.μ) || ismissing(gp_setup.L)
@@ -437,7 +460,9 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
     j = 1
     while j ≤ bootstrap_setup.B
         # Draw from N(0, 1) for sampling from the Gaussian process 
-        @views randn!(zvals[:, j])
+        if !zvals_provided
+            @views randn!(zvals[:, j])
+        end
 
         # Compute the required functions and derivatives 
         @views draw_gp!(ffₜfₓfₓₓ, μ, L, zvals[:, j], ℓz)
@@ -459,7 +484,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
         ## Parameter estimation 
         flag = @views learn_equations!(x, t, u,
             f, fₜ, fₓ, fₓₓ,
-            T, D, D′, R, R′, T_params, D_params, R_params,
+            T, D, D′, R, R′, T_params[:, j], D_params[:, j], R_params[:, j],
             delayBases[:, j], diffusionBases[:, j], reactionBases[:, j], stacked_params,
             lowers, uppers, bootstrap_setup.constrained, obj_values,
             bootstrap_setup.obj_scale_GLS, bootstrap_setup.obj_scale_PDE,

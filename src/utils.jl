@@ -167,3 +167,19 @@ function error_comp(bgp, solns_all, x, t, u; level = 0.05, compute_mean = false)
         return [quantile(errs, level / 2), quantile(errs, 1 - level / 2)]
     end
 end
+
+"""
+    update_results(bgp, bgp_new, mechanism)
+
+Updates the results in `bgp` with new results `bgp_new` for a re-estimated `mechanism`.
+"""
+function update_results(bgp, bgp_new, mechanism)
+    if mechanism == "delay"
+        bgp = @set bgp.delayBases = bgp_new.delayBases
+    elseif mechanism == "diffusion"
+        bgp = @set bgp.diffusionBases = bgp_new.diffusionBases
+    elseif mechanism == "reaction"
+        bgp = @set bgp.reactionBases = bgp_new.reactionBases
+    end
+    return bgp
+end

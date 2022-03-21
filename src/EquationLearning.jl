@@ -21,6 +21,7 @@ using PreallocationTools
 using Printf 
 using StatsBase 
 using Random
+using Setfield
 using KernelDensity   
 using Sundials
 
@@ -42,6 +43,6 @@ include("basis_bootstrapping.jl")
 ## Export functions
 #####################################################################
 
-export bootstrap_gp, boot_pde_solve, curve_results, density_results, delay_product, pde_results, GP_Setup, Bootstrap_Setup, PDE_Setup, BootResults, density_values, curve_values, pde_values, error_comp, basis_bootstrap_gp
+export bootstrap_gp, boot_pde_solve, curve_results, density_results, delay_product, pde_results, GP_Setup, Bootstrap_Setup, PDE_Setup, BootResults, density_values, curve_values, pde_values, error_comp, basis_bootstrap_gp, update_results
 
 end

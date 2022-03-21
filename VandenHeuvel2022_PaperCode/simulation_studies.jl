@@ -145,7 +145,7 @@ gp_setup = EquationLearning.GP_Setup(u; ℓₓ, ℓₜ, σ, σₙ, GP_Restarts, 
 
 # Now do the bootstrapping. We start by seeing if we can learn the scales of the parameters so that we can re-scale for faster optimisation
 lowers = [0.001, 0.6]
-uppers = [0.5, 1.5]
+uppers = [0.024, 1.5]
 bootstrap_setup = @set bootstrap_setup.B = 10
 bootstrap_setup = @set bootstrap_setup.show_losses = true
 bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 4
@@ -179,12 +179,12 @@ end
 save("figures/simulation_study_initial_fisher_kolmogorov_results.pdf", densityFigures, px_per_unit = 2)
 
 # Now rescale and do more iterations
-lowers = [0.7, 0.7]
-uppers = [1.3, 1.3]
+lowers = [0.99, 0.7]
+uppers = [1.01, 1.3]
 bootstrap_setup = @set bootstrap_setup.B = 200
 bootstrap_setup = @set bootstrap_setup.show_losses = false
 bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 3
-D_params = [323.0] * t_scale / x_scale^2
+D_params = [300.0] * t_scale / x_scale^2
 R_params = [K, 0.044 * t_scale]
 bgp = bootstrap_gp(x, t, u, T, D, D′, R, R′, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
 pde_data = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "data")
@@ -280,10 +280,10 @@ t_pde = copy(t)
 u_pde = copy(u)
 
 # Compute the mean vector and Cholesky factor for the GP 
-σ = log.([1e-1, 2std(u)])
-σₙ = log.([1e-5, 2std(u)])
-gp, μ, L = EquationLearning.precompute_gp_mean(x, t, u, ℓₓ, ℓₜ, σ, σₙ, nugget, GP_Restarts, bootstrap_setup)
-gp_setup = EquationLearning.GP_Setup(u; ℓₓ, ℓₜ, σ, σₙ, GP_Restarts, μ, L, nugget, gp)
+σ = log.([1e-5, 5std(u)])
+σₙ = log.([1e-5, 25std(u)])
+gp, μ, L = EquationLearning.precompute_gp_mean(x, t, u, ℓₓ, ℓₜ, σ, σₙ, 1e-4, 250, bootstrap_setup)
+gp_setup = EquationLearning.GP_Setup(u; ℓₓ, ℓₜ, σ, σₙ, GP_Restarts = 250, μ, L, nugget = 1e-4, gp)
 
 # Define functions and parameters to try and learn (misspecified!)
 T = (t, α, p) -> 1.0
@@ -300,7 +300,7 @@ R_params = [K, 1.0]
 
 # Now do the bootstrapping. We start by seeing if we can learn the scales of the parameters so that we can re-scale for faster optimisation
 lowers = [0.001, 0.001, 0.6]
-uppers = [0.5, 0.5, 3.5]
+uppers = [0.084, 0.5, 3.5]
 bootstrap_setup = @set bootstrap_setup.B = 10
 bootstrap_setup = @set bootstrap_setup.show_losses = true
 bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 4
@@ -357,7 +357,7 @@ T_params = [1.0, 1.0]
 D_params = [K, 1.0, 1.0]
 R_params = [K, 1.0]
 lowers = [-10, 0.0, 0.001, 0.6]
-uppers = [0.0, 10.0, 0.5, 3.5]
+uppers = [0.0, 10.0, 0.084, 3.5]
 bootstrap_setup = @set bootstrap_setup.B = 10
 bootstrap_setup = @set bootstrap_setup.show_losses = true
 bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 4
@@ -402,14 +402,14 @@ end
 save("figures/simulation_study_revised_porous_fisher_results.pdf", densityPDEFigures, px_per_unit = 2)
 
 # Now rescale 
-lowers = [0.5, 0.5, 0.5, 0.5]
-uppers = [1.5, 1.5, 1.5, 1.5]
+lowers = [0.5, 0.5, 0.98, 0.5]
+uppers = [1.5, 1.5, 1.02, 1.5]
 bootstrap_setup = @set bootstrap_setup.B = 100
 bootstrap_setup = @set bootstrap_setup.show_losses = false
-bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 3
-T_params = [-3.013, 0.286 * t_scale]
-D_params = [K, 1122.632 * t_scale / x_scale^2]
-R_params = [K, 0.1 * t_scale]
+bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 1
+T_params = [-4.0, 0.4 * t_scale]
+D_params = [K, 2800.0 * t_scale / x_scale^2]
+R_params = [K, 0.089 * t_scale]
 bgp = bootstrap_gp(x, t, u, T, D, D′, R, R′, α₀, β₀, γ₀, lowers, uppers; gp_setup, bootstrap_setup, optim_setup, pde_setup, D_params, R_params, T_params, verbose = false)
 pde_data = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "data")
 pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
@@ -897,9 +897,9 @@ Du_vals, Ru_vals, u_vals = EquationLearning.curve_values(bgp; level = 0.05, x_sc
 diffusionAxis = Axis(resultFigures[2, 1], xlabel = L"$u$ (cells/μm²)", ylabel = L"$D(u)$ (μm²/h)", title = "(e): Diffusion curve", linewidth = 1.3, linecolor = :blue, titlealign = :left)
 lines!(diffusionAxis, u_vals / x_scale^2, Du_vals[1])
 band!(diffusionAxis, u_vals / x_scale^2, Du_vals[3], Du_vals[2], color = (:blue, 0.35))
-Dfnc = u -> evaluate_basis.(Ref(β), Ref(D), u, [K])
+Dfnc = u -> EquationLearning.evaluate_basis.(Ref(β), Ref(D), u, [K])
 lines!(diffusionAxis, u_vals / x_scale^2, Dfnc(u_vals) .* x_scale^2 / t_scale, color = :red, linestyle = :dash)
-Rfnc = u -> evaluate_basis.(Ref(γ), Ref(R), u, [K])
+Rfnc = u -> EquationLearning.evaluate_basis.(Ref(γ), Ref(R), u, [K])
 reactionAxis = Axis(resultFigures[2, 2], xlabel = L"$u$ (cells/μm²)", ylabel = L"$R(u)$ (1/h)", title = "(f): Reaction curve", linewidth = 1.3, linecolor = :blue, titlealign = :left)
 lines!(reactionAxis, u_vals / x_scale^2, Ru_vals[1])
 band!(reactionAxis, u_vals / x_scale^2, Ru_vals[3], Ru_vals[2], color = (:blue, 0.35))
@@ -990,6 +990,12 @@ error_fig[1, 2] = Legend(error_fig, ax, L"\tau_2")
 #####################################################################
 # Generate the data
 Random.seed!(5103821)
+nₓ = 30
+nₜ = 30
+bootₓ = LinRange(25.0 / x_scale, 1875.0 / x_scale, nₓ)
+bootₜ = LinRange(0.0, 48.0 / t_scale, nₜ)
+bootstrap_setup = @set bootstrap_setup.bootₓ = bootₓ
+bootstrap_setup = @set bootstrap_setup.bootₜ = bootₜ
 dat = assay_data[6]
 x₀ = dat.Position[dat.Time.==0.0]
 u₀ = dat.AvgDens[dat.Time.==0.0]
@@ -1017,7 +1023,7 @@ gp_setup = EquationLearning.GP_Setup(u; ℓₓ, ℓₜ, σ, σₙ, GP_Restarts, 
 α₀ = [1.0, 1.0]
 β₀ = [1.0]
 γ₀ = [1.0]
-bootstrap_setup = @set bootstrap_setup.B = 50
+bootstrap_setup = @set bootstrap_setup.B = 10
 bootstrap_setup = @set bootstrap_setup.show_losses = false
 bootstrap_setup = @set bootstrap_setup.Optim_Restarts = 1
 lowers = [0.7, 0.7, 0.7, 0.7]
