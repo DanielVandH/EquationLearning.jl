@@ -35,8 +35,8 @@ initial estimates are chosen based on provided ranges for the hyperparameters an
 - `num_restarts = 50`: The number of restarts to perform.
 """
 function opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts = 50)
-    @assert length(ℓₓ) == length(ℓₜ) == length(σ) == length(σₙ) == 2 "The provided hyperparameters must be given as vectors of length 2 providing upper and lower bounds."
-    @assert issorted(ℓₓ) && issorted(ℓₜ) && issorted(σ) && issorted(σₙ) "The provided ranges for the hyperparameters must be given as (lower, upper)."
+    #@assert length(ℓₓ) == length(ℓₜ) == length(σ) == length(σₙ) == 2 "The provided hyperparameters must be given as vectors of length 2 providing upper and lower bounds."
+    #@assert issorted(ℓₓ) && issorted(ℓₜ) && issorted(σ) && issorted(σₙ) "The provided ranges for the hyperparameters must be given as (lower, upper)."
 
     if num_restarts ≥ 2
         ## Form the design 
@@ -88,7 +88,7 @@ Fits a Gaussian process with data `(x, t)` using the targets in `u`.
 """
 function fit_GP(x, t, u; ℓₓ = log.([1e-4, 1.0]), ℓₜ = log.([1e-4, 1.0]),
     σ = log.([1e-1, 2std(u)]), σₙ = log.([1e-5, 2std(u)]), num_restarts = 50)
-    @assert length(x) == length(t) == length(u) "The provided data (x, t, u) must all be the same length."
+    #@assert length(x) == length(t) == length(u) "The provided data (x, t, u) must all be the same length."
 
     # Define the GP 
     meanFunc = MeanZero()
@@ -224,7 +224,7 @@ julia> LinearAlgebra.BLAS.set_num_threads(1)
 ```
 """
 function compute_joint_GP(gp::GPBase, X̃; nugget = 1e-10)
-    @assert size(X̃, 1) == 2 "The test matrix must have two rows only."
+    #@assert size(X̃, 1) == 2 "The test matrix must have two rows only."
 
     # Extract the original data matrix 
     X = gp.x
