@@ -116,7 +116,7 @@ function compute_ribbon_features(x; level = 0.05)
     x_upper = [quantile(r, 1 - level / 2) for r in eachrow(x)]
     return x_mean, x_lower, x_upper
 end
-
+    
 """
     error_comp(bgp, solns_all, x, t, u; level = 0.05)
 
