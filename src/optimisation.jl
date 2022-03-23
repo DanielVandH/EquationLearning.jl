@@ -230,7 +230,7 @@ function learn_equations!(x, t, u,
     errs, MSE, optim_setup,
     iterate_idx, closest_idx, glnodes, glweights, show_losses, σₙ,
     PDEkwargs...)
-    @assert length(obj_values) == size(stacked_params, 2) "The number of objective values must equal the provided number of initial parameter estimate restarts."
+    #@assert length(obj_values) == size(stacked_params, 2) "The number of objective values must equal the provided number of initial parameter estimate restarts."
 
     # Define the objective function
     maxf = maximum(f[inIdx])
