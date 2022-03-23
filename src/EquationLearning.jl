@@ -38,11 +38,17 @@ include("utils.jl")             # Extra utility functions
 include("plot_results.jl")      # Functions for plotting results from bootstrapping 
 include("synthetic_data.jl")    # Function for generating synthetic data 
 include("basis_bootstrapping.jl")
+include("comparison.jl")
 
 #####################################################################
 ## Export functions
 #####################################################################
 
-export bootstrap_gp, boot_pde_solve, curve_results, density_results, delay_product, pde_results, GP_Setup, Bootstrap_Setup, PDE_Setup, BootResults, density_values, curve_values, pde_values, error_comp, basis_bootstrap_gp, update_results
+export bootstrap_gp, boot_pde_solve, curve_results, 
+    density_results, delay_product, pde_results, GP_Setup, 
+    Bootstrap_Setup, PDE_Setup, BootResults, density_values, 
+    curve_values, pde_values, error_comp, 
+    basis_bootstrap_gp, update_results,
+    AIC, compare_AICs
 
 end
