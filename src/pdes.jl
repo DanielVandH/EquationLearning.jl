@@ -127,7 +127,7 @@ Computes initial conditions for the bootstrap iterates in `bgp`. See also [`boot
 - `initialCondition_all`: The initial condition to use for each bootstrap iterate, with the `j`th column corresponding to the `j`th bootstrap sample.
 """
 function compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp::Union{BootResults, BasisBootResults}, N, B, meshPoints)
-    @assert ICType ∈ ["data", "gp"] "The provided ICType must be either \"data\" or \"gp\"."
+    #@assert ICType ∈ ["data", "gp"] "The provided ICType must be either \"data\" or \"gp\"."
     initialCondition_all = zeros(N, B)
     @views if ICType == "data"
         position₁ = x_pde[t_pde.==0.0]
@@ -229,8 +229,8 @@ For example, we may have 3 replicates of some data which we would easily use in 
 together for obtaining the solutions.
 """
 function boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.0, ICType = "data")
-    @assert 0 < prop_samples ≤ 1.0 "The values of prop_samples must be in (0, 1]."
-    @assert ICType ∈ ["data", "gp"]
+    #@assert 0 < prop_samples ≤ 1.0 "The values of prop_samples must be in (0, 1]."
+    #@assert ICType ∈ ["data", "gp"]
     nodes, weights = gausslegendre(5)
     # Compute number of bootstrap replicates 
     tr = bgp.delayBases
@@ -253,7 +253,7 @@ function boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.
     # Solve PDEs
     initialCondition = zeros(N, 1) # Setup cache array
     finalTime = maximum(bgp.pde_setup.δt)
-    sample_idx = StatsBase.sample(idx, rand_pde)
+    sample_idx = StatsBase.sample(idx, rand_pde, replace = false)
     Du = zeros(N, 1)
     Ru = zeros(N, 1)
     D′u = zeros(N, 1)
