@@ -128,10 +128,10 @@ function Bootstrap_Setup(x::AbstractVector, t::AbstractVector;
     obj_scale_GLS = x -> x,
     obj_scale_PDE = x -> x,
     show_losses = false)
-    @assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
-    @assert B > 0 "The number of bootstrap samples must be a positive integer."
-    @assert all(0 .≤ τ .≤ 1.0) "The threshold tolerances in τ must be between 0.0 and 1.0."
-    @assert Optim_Restarts > 0 "The number of restarts mus tbe a positive integer."
+    #@assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
+    #@assert B > 0 "The number of bootstrap samples must be a positive integer."
+    #@assert all(0 .≤ τ .≤ 1.0) "The threshold tolerances in τ must be between 0.0 and 1.0."
+    #@assert Optim_Restarts > 0 "The number of restarts mus tbe a positive integer."
     return Bootstrap_Setup(bootₓ, bootₜ, B, τ, Optim_Restarts, constrained, obj_scale_GLS, obj_scale_PDE, show_losses)
 end
 
@@ -177,9 +177,9 @@ function PDE_Setup(x, t;
     finalTime = maximum(t),
     δt = finalTime / 4.0,
     alg = nothing)
-    @assert length(LHS) == length(RHS) == 3 "The provided boundary condition vectors LHS and RHS must be of length 3."
-    @assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
-    @assert ICType ∈ ["data", "gp"]
+    #@assert length(LHS) == length(RHS) == 3 "The provided boundary condition vectors LHS and RHS must be of length 3."
+    #@assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
+    #@assert ICType ∈ ["data", "gp"]
     if δt isa Number
         δt = 0:δt:finalTime
         if length(δt) ≠ length(unique(t)) 
