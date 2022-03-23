@@ -317,7 +317,7 @@ function pde_results(x_pde, t_pde, u_pde, solns_all, bgp::Union{BootResults, Bas
     x_scale = 1.0, t_scale = 1.0)
     ## Setup
     M = length(bgp.pde_setup.δt)
-    @assert length(colors) == M "There must be as many provided colors as there are unique time values."
+    #@assert length(colors) == M "There must be as many provided colors as there are unique time values."
     soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(solns_all, bgp; level = level)
 
     # Initiate axis 
@@ -334,6 +334,13 @@ function pde_results(x_pde, t_pde, u_pde, solns_all, bgp::Union{BootResults, Bas
     return pdeSolutionPlots_BGP
 end
 
+"""
+    delay_product(bgp, t; type = "diffusion", level = 0.05, x_scale = 1.0, t_scale = 1.0)
+
+Computes the curve `T(t; α)D(u; β)` (if `type = "diffusion"`) or `T(t; β)R(u; γ)` (if `type = "reaction"`)
+with uncertainty for the results in `bgp`, at the time `t`. The significance level is determined by `level` (`0.05` default)
+and the spatial and temporal data are scaled by `x_scale` (`1.0` default) and `t_scale` (`1.0` default), respectively.
+"""
 function delay_product(bgp, t; type = "diffusion", level = 0.05, x_scale = 1.0, t_scale = 1.0)
     trv = bgp.delayBases 
     if type == "diffusion"
@@ -355,12 +362,10 @@ function delay_product(bgp, t; type = "diffusion", level = 0.05, x_scale = 1.0, 
     TDu_lower = zeros(num_u)
     stor_vals = zeros(B^2)
     for (i, u) in enumerate(u_vals)
-        idx = 1
-        for α in eachcol(trv)
-            for θ in eachcol(dr)
-                stor_vals[idx] = bgp.T(t, α, bgp.T_params) * F(u, θ, p) * scale
-                idx += 1
-            end
+        for i in 1:B 
+            @views α = trv[:, i]
+            @views β = dr[:, i]
+            stor_vals[i] = bgp.T(t, α, bgp.T_params) * F(u, θ, p) * scale
         end
         TDu_mean[i] = mean(stor_vals)
         TDu_lower[i] = quantile(stor_vals, level / 2)
