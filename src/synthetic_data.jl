@@ -43,7 +43,7 @@ function generate_data(x₀, u₀, T, D, R, D′, R′, α, β, γ, δt, finalTi
     N = 1000, LHS = [0.0, 1.0, 0.0], RHS = [0.0, -1.0, 0.0], 
     alg = nothing, 
     N_thin = 100, num_restarts = 50, D_params, R_params, T_params)
-    @assert length(x₀) == length(u₀) "The lengths of the provided data vectors must all be equal."
+    #@assert length(x₀) == length(u₀) "The lengths of the provided data vectors must all be equal."
     try
         D(u₀[1], β, D_params)
     catch
@@ -112,7 +112,7 @@ function generate_data(x₀, u₀, T, D, R, D′, R′, α, β, γ, δt, finalTi
     sol = DifferentialEquations.solve(prob, CVODE_BDF(linear_solver = :Band, jac_upper = 1, jac_lower = 1); saveat = δt)
     u = abs.(hcat(sol.u...))
     # Add noise 
-    u .+= maximum(u)/100 .* randn(size(u)) 
+    u .+= abs.(u).^(0.45) .* randn(size(u)) 
     u .= max.(u, 0.0)
     # Thin the data 
     thin_idx = 1:trunc(Int64, N / N_thin):N
