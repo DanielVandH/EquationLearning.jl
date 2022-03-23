@@ -205,7 +205,7 @@ function basis_bootstrap_gp(x::T1, t::T1, u::T1,
     pde_setup::PDE_Setup = PDE_Setup(x),
     D_params = nothing, R_params = nothing, PDEkwargs...) where {T1<:AbstractVector}
     ## Check provided functions and ODE algorithm are correct
-    @assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
+    #@assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
     d = length(D)
     r = length(R)
     try
@@ -394,8 +394,8 @@ For example, we may have 3 replicates of some data which we would easily use in 
 together for obtaining the solutions.
 """
 function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples = 1.0, ICType = "data")
-    @assert 0 < prop_samples ≤ 1.0 "The values of prop_samples must be in (0, 1]."
-    @assert ICType ∈ ["data", "gp"]
+    #@assert 0 < prop_samples ≤ 1.0 "The values of prop_samples must be in (0, 1]."
+    #@assert ICType ∈ ["data", "gp"]
     nodes, weights = gausslegendre(5)
     d = length(bgp.D)
     r = length(bgp.R)
