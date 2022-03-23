@@ -173,7 +173,7 @@ See [`bootstrap_helper`](@ref) for details and [`bootstrap_gp`](@ref) for its us
 - `MSE`: Cache array for storing the individual squared errors.
 """
 function preallocate_eqlearn(num_restarts, meshPoints, δt, finalTime, Xₛ, tt, d, r, nₓnₜ, gp, lowers, uppers)
-    @assert length(lowers) == length(uppers) == tt + d + r
+    #@assert length(lowers) == length(uppers) == tt + d + r
 
     # Optimisation
     obj_values = zeros(num_restarts)
@@ -380,8 +380,8 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
     pde_setup::PDE_Setup = PDE_Setup(x),
     D_params = nothing, R_params = nothing, T_params = nothing, zvals = nothing, PDEkwargs...) where {T1<:AbstractVector}
     ## Check provided functions and ODE algorithm are correct
-    @assert !(typeof(pde_setup.alg) <: Sundials.SundialsODEAlgorithm) "Automatic differentiation is not compatible with Sundials solvers."
-    @assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
+    #@assert !(typeof(pde_setup.alg) <: Sundials.SundialsODEAlgorithm) "Automatic differentiation is not compatible with Sundials solvers."
+    #@assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
     if isnothing(zvals)
         zvals_provided = false 
     else
