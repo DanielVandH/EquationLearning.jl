@@ -383,7 +383,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
     #@assert !(typeof(pde_setup.alg) <: Sundials.SundialsODEAlgorithm) "Automatic differentiation is not compatible with Sundials solvers."
     #@assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
     if isnothing(zvals)
-        zvals_provided = false 
+        zvals_provided = false
     else
         zvals_provided = true
     end
@@ -482,20 +482,28 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
         errs = DiffEqBase.dualcache(zeros(length(inIdx)), trunc(Int64, length(inIdx) / 10)) # We use dualcache since we want to use this within an automatic differentiation computation. 
 
         ## Parameter estimation 
-        flag = @views learn_equations!(x, t, u,
-            f, fₜ, fₓ, fₓₓ,
-            T, D, D′, R, R′, T_params[:, j], D_params[:, j], R_params[:, j],
-            delayBases[:, j], diffusionBases[:, j], reactionBases[:, j], stacked_params,
-            lowers, uppers, bootstrap_setup.constrained, obj_values,
-            bootstrap_setup.obj_scale_GLS, bootstrap_setup.obj_scale_PDE,
-            N, V, Δx, pde_setup.LHS, pde_setup.RHS, initialCondition,
-            pde_setup.finalTime, pde_setup.alg, pde_setup.δt,
-            SSEArray,
-            Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
-            inIdx, unscaled_t̃, tt, d, r,
-            errs, MSE, optim_setup,
-            iterate_idx, closest_idx, glnodes, glweights, bootstrap_setup.show_losses, σₙ,
-            PDEkwargs...)
+        local flag
+        try
+            flag = @views learn_equations!(x, t, u,
+                f, fₜ, fₓ, fₓₓ,
+                T, D, D′, R, R′, T_params[:, j], D_params[:, j], R_params[:, j],
+                delayBases[:, j], diffusionBases[:, j], reactionBases[:, j], stacked_params,
+                lowers, uppers, bootstrap_setup.constrained, obj_values,
+                bootstrap_setup.obj_scale_GLS, bootstrap_setup.obj_scale_PDE,
+                N, V, Δx, pde_setup.LHS, pde_setup.RHS, initialCondition,
+                pde_setup.finalTime, pde_setup.alg, pde_setup.δt,
+                SSEArray,
+                Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
+                inIdx, unscaled_t̃, tt, d, r,
+                errs, MSE, optim_setup,
+                iterate_idx, closest_idx, glnodes, glweights, bootstrap_setup.show_losses, σₙ,
+                PDEkwargs...)
+        catch err
+            if err isa InterruptException
+                println("Function terminated by user.")
+                rethrow(err)
+            end
+        end
 
         if !flag
             j += 1

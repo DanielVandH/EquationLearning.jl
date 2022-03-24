@@ -87,10 +87,20 @@ The results are divided by the total number of comparisons, `prod(length.(AICs))
 function compare_AICs(AICs::Vector{Float64}...)
     num_models = length(AICs)
     results = Matrix{Int64}(zeros(3, num_models))
+    idx = 1 
     for AIC in Iterators.product(AICs...) # All combinations of the AIC values
-        AIC_res = compare_AICs(AIC...)
-        for (i, Δᵢ_result) in enumerate(AIC_res)
-            results[Δᵢ_result, i] += 1
+        print("Performing comparisons: Comparison $idx of $(prod(length.(AICs))).\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
+        try
+            AIC_res = compare_AICs(AIC...)
+            for (i, Δᵢ_result) in enumerate(AIC_res)
+                results[Δᵢ_result, i] += 1
+            end
+            idx += 1
+        catch err
+            if err isa InterruptException 
+                println("Function terminated by user.")
+                rethrow(err)
+            end
         end
     end
     num_comparisons = prod(length.(AICs))
