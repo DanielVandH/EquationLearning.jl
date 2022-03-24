@@ -118,8 +118,13 @@ function loss_function(αβγ; u,
             GLSC = obj_scale_GLS(mean(MSE))
             total_loss += GLSC
         catch err
-            println(err)
-            return Inf
+            if err isa InterruptException
+                println("Function terminated by user.")
+                rethrow(err)
+            else
+                println(err)
+                return Inf
+            end
         end
         if isfinite(total_loss)
             errs = get_tmp(errs, first(αβγ))
@@ -257,8 +262,13 @@ function learn_equations!(x, t, u,
             prob = fit_fnc(stacked_params[:, j])
             obj_values[j] = prob.minimum
         catch err
-            println(err)
-            obj_values[j] = Inf
+            if err isa InterruptException
+                println("Function terminated by user.")
+                rethrow(err)
+            else
+                println(err)
+                obj_values[j] = Inf
+            end
         end
     end
 
