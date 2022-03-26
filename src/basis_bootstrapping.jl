@@ -18,7 +18,7 @@ The function uses `@inline` to suggest that the compiler could inline this in th
 @inline function evaluate_basis!(val, coefficients, basis, point, params, A)
     ## Construct the matrix: 
     @inbounds @views for (j, f) in enumerate(basis)
-        @. A[:, j] = f(point, params)
+        A[:, j] .= f.(point, Ref(params))
     end
     mul!(val, A, coefficients)
     return nothing
@@ -119,7 +119,7 @@ function basis_bootstrap_helper(x, t, bootₓ, bootₜ, d, r, B)
     return x_min, t_min, x_rng, t_rng, Xₛ,
     f, fₜ, fₓ, fₓₓ, ffₜfₓfₓₓ,
     f_idx, fₜ_idx, fₓ_idx, fₓₓ_idx,
-    diffusionBases, reactionBases, 
+    diffusionBases, reactionBases,
     ℓz, zvals,
     A
 end
@@ -151,14 +151,14 @@ Estimates the coefficients `db` and `rb` for diffusion and reaction.
 # Outputs 
 `db` and `rb` are updated in-place with the diffusion and reaction coefficients, respectively.
 """
-function basis_learn_equations!(f, fₜ, fₓ, fₓₓ, D, D′, R, 
-    db, rb, d, r, A, 
+function basis_learn_equations!(f, fₜ, fₓ, fₓₓ, D, D′, R,
+    db, rb, d, r, A,
     D_params, R_params, inIdx)
-    @inbounds @views @. for j = 1:d # Use @inbounds to tell Julia that all calls to getindex are in the array's size. Use @muladd to help detect whether fused multiply-add is OK. Use @. to distribute broadcasts easily. Use @views to convert all array calls into view calls.
-        A[:, j] = D′[j](f, D_params) * (fₓ^2) + D[j](f, D_params) * fₓₓ
+    @inbounds @views for j = 1:d # Use @inbounds to tell Julia that all calls to getindex are in the array's size. Use @muladd to help detect whether fused multiply-add is OK. Use @. to distribute broadcasts easily. Use @views to convert all array calls into view calls.
+        A[:, j] .= D′[j].(f, Ref(D_params)) .* (fₓ.^2) .+ D[j].(f, Ref(D_params)) .* fₓₓ
     end
-    @inbounds @views @. for j = 1:r
-        A[:, d+j] = R[j](f, R_params)
+    @inbounds @views for j = 1:r
+        A[:, d+j] .= R[j].(f, Ref(R_params))
     end
     soln = @views A[inIdx, :] \ fₜ[inIdx]
     db .= @view soln[1:d]
@@ -254,9 +254,9 @@ function basis_bootstrap_gp(x::T1, t::T1, u::T1,
         inIdx = data_thresholder(f, fₜ, bootstrap_setup.τ)
 
         ## Parameter estimation 
-        @views basis_learn_equations!(f, fₜ, fₓ, fₓₓ, D, D′, R, 
-        diffusionBases[:, j], reactionBases[:, j], d, r, A, 
-        D_params, R_params, inIdx)
+        @views basis_learn_equations!(f, fₜ, fₓ, fₓₓ, D, D′, R,
+            diffusionBases[:, j], reactionBases[:, j], d, r, A,
+            D_params, R_params, inIdx)
 
         if @views !any(isnan.(reactionBases[:, j])) && !any(isnan.(diffusionBases[:, j]))
             j += 1
@@ -433,8 +433,11 @@ function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples
         initialCondition .= initialCondition_all[:, coeff]
         p = (N, V, Δx, bgp.pde_setup.LHS..., bgp.pde_setup.RHS..., Du, Ru, D′u, R′u, bgp.D, bgp.R, bgp.D′, bgp.R′, dr[:, coeff], rr[:, coeff], bgp.D_params, bgp.R_params, A₁, A₂)
         prob = ODEProblem(basis_sysdegeneral!, initialCondition, tspan, p)
-        solns_all[:, pdeidx, :] .= hcat(DifferentialEquations.solve(prob, bgp.pde_setup.alg, saveat = bgp.pde_setup.δt).u...)
-        print("Solving PDEs: Step $pdeidx of $rand_pde.\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
+        #try
+            solns_all[:, pdeidx, :] .= hcat(DifferentialEquations.solve(prob, bgp.pde_setup.alg, saveat = bgp.pde_setup.δt).u...)
+            print("Solving PDEs: Step $pdeidx of $rand_pde.\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
+        #catch
+        #end
     end
 
     # Return
