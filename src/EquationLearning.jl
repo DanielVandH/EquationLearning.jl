@@ -24,21 +24,24 @@ using Random
 using Setfield
 using KernelDensity   
 using Sundials
+using StaticArrays
+using FLoops 
+using SharedArrays
 
 #####################################################################
 ## Load files 
 #####################################################################
 
-include("structs.jl")           # Definining certain structures
-include("gps.jl")               # Fitting Gaussian processes 
-include("pdes.jl")              # Working with PDEs 
-include("bootstrapping.jl")     # Bootstrapping functions 
-include("optimisation.jl")      # Functions for optimising parameters 
-include("utils.jl")             # Extra utility functions 
-include("plot_results.jl")      # Functions for plotting results from bootstrapping 
-include("synthetic_data.jl")    # Function for generating synthetic data 
-include("basis_bootstrapping.jl")
-include("comparison.jl")
+include("structs.jl")               # Definining certain structures
+include("gps.jl")                   # Fitting Gaussian processes 
+include("pdes.jl")                  # Working with PDEs 
+include("bootstrapping.jl")         # Bootstrapping functions 
+include("optimisation.jl")          # Functions for optimising parameters 
+include("utils.jl")                 # Extra utility functions 
+include("plot_results.jl")          # Functions for plotting results from bootstrapping 
+include("synthetic_data.jl")        # Function for generating synthetic data 
+include("basis_bootstrapping.jl")   # Basis function approach to bootstrapping 
+include("comparison.jl")            # Model selection
 
 #####################################################################
 ## Export functions
