@@ -5,7 +5,7 @@ Computes all the AIC values for the results in `bgp`. A small-sample size correc
 if `correct = true`. The formulas used are given in Eq. 6 (uncorrected) or Eq. 17 (corrected) of
 Banks and Joyner (2017) [https://doi.org/10.1016/j.aml.2017.05.005].
 """
-function AIC(bgp::Union{BootResults, BasisBootResults}, x, t, u; correct = true, pde_solns = nothing)
+function AIC(bgp::Union{BootResults,BasisBootResults}, x, t, u; correct = true, pde_solns = nothing)
     ## Number of model parameters and bootstrap iterations
     tt = size(bgp.delayBases, 1)
     d = size(bgp.diffusionBases, 1)
@@ -43,7 +43,7 @@ function AIC(bgp::Union{BootResults, BasisBootResults}, x, t, u; correct = true,
     ## Now compute all the AIC values 
     AICs = N * log.(errs ./ N) .+ 2 * (κ .+ 1)
     ## Do we need a correction?
-    if correct 
+    if correct
         AICs .+= 2 * (κ .+ 1) .* (κ .+ 2) ./ (N - κ)
     end
     return AICs
@@ -58,8 +58,8 @@ Classifies `Δᵢ`, the AICᵢ difference AICᵢ - AICₘᵢₙ, based on the gu
 - `Δᵢ > 8.0`: Returns `3`, meaning there is essentially no evidence that this model is optimal.
 """
 function classify_Δᵢ(Δᵢ::Float64)
-    if Δᵢ ≤ 3.0 
-        return 1 
+    if Δᵢ ≤ 3.0
+        return 1
     elseif 3.0 < Δᵢ ≤ 8.0
         return 2
     elseif Δᵢ > 8.0
@@ -74,37 +74,37 @@ Compares the AIC values in `AICs...`. See also [`classify_Δᵢ`](@ref) and [`AI
 """
 function compare_AICs(AICs::Float64...)
     min_AIC = minimum(AICs)
-    Δᵢ = AICs .- min_AIC 
+    Δᵢ = AICs .- min_AIC
     return classify_Δᵢ.(Δᵢ)
 end
 
 """
-    compare_AICs(AICs::Vector{Float64}...)
+    compare_AICs(AICs::Vector{Float64}...; thin_prop = 0.20)
 
 Compares many AICs by making comparisons among all possible combinations of AICs across each vector. 
 The results are divided by the total number of comparisons, `prod(length.(AICs))`.
 """
-function compare_AICs(AICs::Vector{Float64}...)
+function compare_AICs(AICs::Vector{Float64}...; thin_prop = 0.20)
     num_models = length(AICs)
-    results = Matrix{Int64}(zeros(3, num_models))
-    idx = 1 
+    results = Matrix{Int64}(num_models, 3)
+    AICs = [AICs[i][sample(1:length(AICs[i]), trunc(Int64, thin_prop * length(AICs[i])), replace = false)] for i in 1:num_models]
     for AIC in Iterators.product(AICs...) # All combinations of the AIC values
-        print("Performing comparisons: Comparison $idx of $(prod(length.(AICs))).\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
         try
             AIC_res = compare_AICs(AIC...)
-            for (i, Δᵢ_result) in enumerate(AIC_res)
-                results[Δᵢ_result, i] += 1
+            for (i, Δᵢ_result) in pairs(AIC_res)
+                    @inbounds results[i, Δᵢ_result] += 1
             end
-            idx += 1
         catch err
-            if err isa InterruptException 
+            if err isa InterruptException
                 println("Function terminated by user.")
                 rethrow(err)
+            else
+                throw(err)
             end
         end
     end
     num_comparisons = prod(length.(AICs))
-    return results/num_comparisons
+    return results / num_comparisons
 end
 
 """
@@ -112,7 +112,7 @@ end
 
 Compare several bootstrapped models using AIC.
 """
-function compare_AICs(x, t, u, models::Union{BootResults, BasisBootResults}...; correct = true)
+function compare_AICs(x, t, u, models::Union{BootResults,BasisBootResults}...; correct = true, thin_prop = 0.20)
     AICs = [AIC(bgp, x, t, u; correct = correct) for bgp in models]
-    return compare_AICs(AICs...)
+    return compare_AICs(AICs...; thin_prop)
 end
