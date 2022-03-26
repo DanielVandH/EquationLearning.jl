@@ -200,9 +200,9 @@ function curve_values(bgp::BootResults; level = 0.05, x_scale = 1.0, t_scale = 1
     Du = zeros(num_u, B)
     Ru = zeros(num_u, B)
     @views @inbounds for j = 1:B
-        Tu[:, j] .= bgp.T.(t_vals, Ref(trv[:, j]), Ref(bgp.T_params)) # Use Ref() so that we only broadcast over the first argument.
-        Du[:, j] .= bgp.D.(u_vals, Ref(dr[:, j]), Ref(bgp.D_params)) * x_scale^2 / t_scale
-        Ru[:, j] .= bgp.R.(u_vals, Ref(rr[:, j]), Ref(bgp.R_params)) / t_scale
+        Tu[:, j] .= bgp.T.(t_vals, Ref(trv[:, j]), Ref(bgp.T_params[:, j])) # Use Ref() so that we only broadcast over the first argument.
+        Du[:, j] .= bgp.D.(u_vals, Ref(dr[:, j]), Ref(bgp.D_params[:, j])) * x_scale^2 / t_scale
+        Ru[:, j] .= bgp.R.(u_vals, Ref(rr[:, j]), Ref(bgp.R_params[:, j])) / t_scale
     end
 
     # Find lower/upper values for confidence intervals, along with mean curves
@@ -360,11 +360,11 @@ function delay_product(bgp, t; type = "diffusion", level = 0.05, x_scale = 1.0, 
     TDu_mean = zeros(num_u)
     TDu_upper = zeros(num_u)
     TDu_lower = zeros(num_u)
-    stor_vals = zeros(B^2)
+    stor_vals = zeros(B)
     for (i, u) in enumerate(u_vals)
         for i in 1:B 
             @views α = trv[:, i]
-            @views β = dr[:, i]
+            @views θ = dr[:, i]
             stor_vals[i] = bgp.T(t, α, bgp.T_params) * F(u, θ, p) * scale
         end
         TDu_mean[i] = mean(stor_vals)
