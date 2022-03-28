@@ -286,3 +286,95 @@ struct BasisBootResults
     bootstrap_setup::Bootstrap_Setup 
     pde_setup::PDE_Setup
 end
+
+"""
+    struct AllResults
+
+Helpful structure for displaying results. This differs from e.g. [`BootResults`] since we also include PDE solutions.
+    
+# Fields 
+- `pde_solutions::Array{Float64}`: Solutions for the PDEs with sampled initial conditions.
+- `AIC::Vector{Float64}`: The AICs.
+- `bgp::Union{BootResults, BasisBootResults}`: Bootstrapping results.
+- `delayCIs`: Confidence intervals for the delay parameters. 
+- `diffusionCIs`: Confidence intervals for the diffusion parameters. 
+- `reactionCIS`: Confidence intervals for the reaction parameters.
+- `delay_density::Figure`: The density plots for the delay coefficients.
+- `diffusion_density::Figure`: The density plots for the diffusion coefficients.
+- `reaction_density::Figure`: The density plots for the reaction coefficients.
+- `delay_curve::Figure`: Plot for the learned delay curve.
+- `diffusion_curve::Figure`: Plot for the learned diffusion curve.
+- `reaction_curve::Figure`: Plot for the learned reaction curve.
+- `pde_plot::Figure`: Plot for the PDE solutions.
+- `pde_error::Vector{Float64}`: Confidence interval for the PDE errors.
+"""
+struct AllResults
+    pde_solutions::Array{Float64}
+    AIC::Vector{Float64}
+    bgp::Union{BootResults, BasisBootResults}
+    delayCIs
+    diffusionCIs
+    reactionCIs
+    delay_density::Figure 
+    diffusion_density::Figure 
+    reaction_density::Figure 
+    delay_curve::Figure 
+    diffusion_curve::Figure 
+    reaction_curve::Figure
+    pde_plot::Figure
+    pde_error::Vector{Float64}
+end
+
+"""
+    AllResults(x_pde, t_pde, u_pde, bgp; <keyword arguments>)
+
+Summarise the bootstrapping results.
+
+# Arguments 
+- `x_pde`: Spatial data for solving the PDEs. 
+- `t_pde`: Temporal data for solving the PDEs. 
+- `u_pde`: Density data for solving the PDEs.
+- `bgp`: Bootstrapping results. 
+
+# Keyword Arguments 
+- `delay_scales = nothing`: Values that multiply the individual delay parameters.
+- `diffusion_scales = nothing`: Values that multiply the individual diffusion parameters. 
+- `reaction_scales = nothing`: Values that multiply the individual reaction parameters.
+- `x_scale = 1.0`: Value used for scaling the spatial data (and all other length units, e.g. for diffusion).
+- `t_scale = 1.0`: Value used for scaling the temporal data (and all other time units, e.g. for reaction).
+- `correct = true`: Whether to correct for a small sample size then computing the AICs.
+
+# Output 
+- `results::AllResults`: Structure containing the results. See [`AllResults`](@ref).
+"""
+function AllResults(x_pde, t_pde, u_pde, bgp; 
+    delay_scales = nothing, diffusion_scales = nothing, reaction_scales = nothing, 
+    x_scale = 1.0, t_scale = 1.0,
+    correct = true)
+    pde_solns = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
+    _, _, _, _, _, _, delayCIs, diffusionCIs, reactionCIs = density_values(bgp; delay_scales, diffusion_scales, reaction_scales)
+    delayd, diffusiond, reactiond = density_results(bgp; delay_scales, diffusion_scales, reaction_scales)
+    delayc, diffusionc, reactionc = curve_results(bgp; x_scale, t_scale)
+    pdep = pde_results(x_pde, t_pde, u_pde, pde_solns, bgp; x_scale, t_scale)
+    AICs = AIC(bgp, x_pde, t_pde, u_pde; correct, pde_solns)
+    errs = error_comp(bgp, pde_solns, x_pde, t_pde, u_pde)
+    results = AllResults(pde_solns, AICs, bgp, delayCIs, diffusionCIs, reactionCIs, delayd, diffusiond, reactiond, delayc, diffusionc, reactionc, pdep, errs)
+    return results
+end
+
+"""
+    AllResults(x_pde, t_pde, u_pde, bgp...; <keyword arguments>)
+
+    Summarise the bootstrapping results for multiple models. See [`BGPResults`](@ref).
+"""
+function AllResults(x_pde, t_pde, u_pde, bgp...; 
+    delay_scales::AbstractVector, diffusion_scales::AbstractVector, reaction_scales::AbstractVector, 
+    x_scale = 1.0, t_scale = 1.0,
+    correct = true)
+    results = Vector{AllResults}(undef, length(bgp))
+    for i in 1:length(bgp)
+        results[i] = AllResults(x_pde, t_pde, u_pde, bgp[i]; 
+            delay_scales = delay_scales[i], diffusion_scales = diffusion_scales[i], reaction_scales = reaction_scales[i], x_scale, t_scale, correct)
+    end 
+    return results
+end
