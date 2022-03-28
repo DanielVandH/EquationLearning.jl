@@ -86,7 +86,7 @@ The results are divided by the total number of comparisons, `prod(length.(AICs))
 """
 function compare_AICs(AICs::Vector{Float64}...; thin_prop = 0.20)
     num_models = length(AICs)
-    results = Matrix{Int64}(num_models, 3)
+    results = Matrix{Int64}(zeros(num_models, 3))
     AICs = [AICs[i][sample(1:length(AICs[i]), trunc(Int64, thin_prop * length(AICs[i])), replace = false)] for i in 1:num_models]
     for AIC in Iterators.product(AICs...) # All combinations of the AIC values
         try
