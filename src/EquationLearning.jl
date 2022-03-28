@@ -27,6 +27,7 @@ using Sundials
 using StaticArrays
 using FLoops 
 using SharedArrays
+using PrettyTables
 
 #####################################################################
 ## Load files 
@@ -42,6 +43,7 @@ include("plot_results.jl")          # Functions for plotting results from bootst
 include("synthetic_data.jl")        # Function for generating synthetic data 
 include("basis_bootstrapping.jl")   # Basis function approach to bootstrapping 
 include("comparison.jl")            # Model selection
+include("display.jl")            # Displaying results
 
 #####################################################################
 ## Export functions
@@ -52,6 +54,6 @@ export bootstrap_gp, boot_pde_solve, curve_results,
     Bootstrap_Setup, PDE_Setup, BootResults, density_values, 
     curve_values, pde_values, error_comp, 
     basis_bootstrap_gp, update_results,
-    AIC, compare_AICs
+    AIC, compare_AICs, AllResults
 
 end
