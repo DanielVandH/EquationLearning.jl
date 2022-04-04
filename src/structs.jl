@@ -88,6 +88,7 @@ A struct defining some arguments for [`bootstrap_gp`](@ref).
 - `constrained::Bool`: `true` if the optimisation problems should be constrained, and `false` otherwise.
 - `obj_scale_GLS::Function`: The function determining how the GLS loss function should be scaled.
 - `obj_scale_PDE::Function`: The function determining how the PDE loss function should be scaled.
+- `init_weight::Float64`: Weight factor for the initial condition for the GLS errors.
 - `show_losses::Bool`: `true` if the loss function should be printed to the REPL throughout the optimisation process, and `false` otherwise.
 """
 struct Bootstrap_Setup
@@ -99,6 +100,7 @@ struct Bootstrap_Setup
     constrained::Bool
     obj_scale_GLS::Function
     obj_scale_PDE::Function
+    init_weight::Float64
     show_losses::Bool
 end
 
@@ -116,6 +118,7 @@ A constructor for [`Bootstrap_Setup`](@ref) for some spatial data `x` and tempor
 - `constrained = false`.
 - `obj_scale_GLS = x -> x`.
 - `obj_scale_PDE = x -> x`.
+- `init_weight = 10.0`.
 - `show_losses = false`.
 """
 function Bootstrap_Setup(x::AbstractVector, t::AbstractVector;
@@ -127,12 +130,13 @@ function Bootstrap_Setup(x::AbstractVector, t::AbstractVector;
     constrained = false,
     obj_scale_GLS = x -> x,
     obj_scale_PDE = x -> x,
+    init_weight = 10.0,
     show_losses = false)
     #@assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
     #@assert B > 0 "The number of bootstrap samples must be a positive integer."
     #@assert all(0 .≤ τ .≤ 1.0) "The threshold tolerances in τ must be between 0.0 and 1.0."
     #@assert Optim_Restarts > 0 "The number of restarts mus tbe a positive integer."
-    return Bootstrap_Setup(bootₓ, bootₜ, B, τ, Optim_Restarts, constrained, obj_scale_GLS, obj_scale_PDE, show_losses)
+    return Bootstrap_Setup(bootₓ, bootₜ, B, τ, Optim_Restarts, constrained, obj_scale_GLS, obj_scale_PDE, init_weight, show_losses)
 end
 
 """
