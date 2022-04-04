@@ -496,7 +496,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
                 Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
                 inIdx, unscaled_t̃, tt, d, r,
                 errs, MSE, optim_setup,
-                iterate_idx, closest_idx, glnodes, glweights, bootstrap_setup.show_losses, σₙ,
+                iterate_idx, closest_idx, glnodes, glweights, bootstrap_setup.show_losses, σₙ, bootstrap_setup.init_weight,
                 PDEkwargs...)
         catch err
             if err isa InterruptException

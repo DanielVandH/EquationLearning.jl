@@ -66,6 +66,7 @@ Computes the loss function at `αβγ`.
 - `closest_idx`: Vector used for indexing the points in the PDE's meshpoints that are closest to the actual spatial data used for fitting the Gaussian process.
 - `show_losses`: Whether to print the individual loss functions to the REPL during the optimisation process.
 - `σₙ`: The standard deviation of the observation noise of the Gaussian process.
+- `init_weight`: Weight factor for the initial condition for the GLS errors.
 - `PDEkwargs...`: The keyword arguments to use in `DifferentialEquations.solve`.
 
 # Extended help
@@ -85,7 +86,7 @@ function loss_function(αβγ; u,
     T, D, D′, R, R′,
     initialCondition, finalTime, EQLalg, δt, SSEArray, Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
     inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE, glnodes, glweights, maxf,
-    D_params, R_params, T_params, iterate_idx, closest_idx, show_losses, σₙ, PDEkwargs...)
+    D_params, R_params, T_params, iterate_idx, closest_idx, show_losses, σₙ, init_weight, PDEkwargs...)
     α = @views αβγ[1:tt]
     β = @views αβγ[(tt+1):(tt+d)]
     γ = @views αβγ[(tt+d+1):(tt+d+r)]
@@ -111,8 +112,13 @@ function loss_function(αβγ; u,
             SSEArray .= hcat(DifferentialEquations.solve(prob, EQLalg, saveat = δt; PDEkwargs...).u...)
             for j = 1:length(δt)
                 for (k, i) in enumerate(iterate_idx[j])
-                    val = SSEArray[closest_idx[j][k], j]
-                    MSE[i] = abs2((u[i] - val) / σₙ)
+                    if δt[j] > 0.0
+                        val = SSEArray[closest_idx[j][k], j]
+                        MSE[i] = abs2((u[i] - val) / σₙ)
+                    else
+                        val = SSEArray[closest_idx[j][k], j]
+                        MSE[i] = init_weight*abs2((u[i] - val) / σₙ)
+                    end
                 end
             end
             GLSC = obj_scale_GLS(mean(MSE))
@@ -217,6 +223,7 @@ Estimate values for the delay, diffusion, and reaction parameters. See [`bootstr
 - `weights`: The Gauss-Legendre quadrature weights.
 - `show_losses`: `true` if the loss function should be printed to the REPL throughout the optimisation process, and `false` otherwise.
 - `σₙ`: The standard deviation of the observation noise, estimated from the Gaussian process.
+- `init_weight`: Weight factor for the initial condition for the GLS errors.
 - `PDEkwargs...`: The keyword arguments to use in `DifferentialEquations.solve`.
 
 # Outputs 
@@ -233,7 +240,7 @@ function learn_equations!(x, t, u,
     Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
     inIdx, unscaled_t̃, tt, d, r,
     errs, MSE, optim_setup,
-    iterate_idx, closest_idx, glnodes, glweights, show_losses, σₙ,
+    iterate_idx, closest_idx, glnodes, glweights, show_losses, σₙ, init_weight,
     PDEkwargs...)
     #@assert length(obj_values) == size(stacked_params, 2) "The number of objective values must equal the provided number of initial parameter estimate restarts."
 
@@ -247,7 +254,7 @@ function learn_equations!(x, t, u,
         δt, SSEArray, Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
         inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE,
         glnodes, glweights, maxf, D_params, R_params, T_params,
-        iterate_idx, closest_idx, show_losses, σₙ, PDEkwargs...)
+        iterate_idx, closest_idx, show_losses, σₙ, init_weight, PDEkwargs...)
 
     # Define the optimisation function 
     if constrained
