@@ -90,7 +90,8 @@ constrained = false
 obj_scale_GLS = log
 obj_scale_PDE = log
 show_losses = false
-bootstrap_setup = EquationLearning.Bootstrap_Setup(bootₓ, bootₜ, B, τ, Optim_Restarts, constrained, obj_scale_GLS, obj_scale_PDE, show_losses)
+init_weight = 10.0
+bootstrap_setup = EquationLearning.Bootstrap_Setup(bootₓ, bootₜ, B, τ, Optim_Restarts, constrained, obj_scale_GLS, obj_scale_PDE, init_weight, show_losses)
 
 ## Setup the GP parameters 
 num_restarts = 250
