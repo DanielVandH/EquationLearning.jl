@@ -79,31 +79,23 @@ function compare_AICs(AICs::Float64...)
 end
 
 """
-    compare_AICs(AICs::Vector{Float64}...; thin_prop = 0.20)
+    compare_AICs(AICs::Vector{Float64}...)
 
-Compares many AICs by making comparisons among all possible combinations of AICs across each vector. 
-The results are divided by the total number of comparisons, `prod(length.(AICs))`.
+Compares many AICs by comparing entry-wise. The results are averaged. Assumes that each AIC is of equal length, 
+otherwise computes only up to the minimum length.
 """
-function compare_AICs(AICs::Vector{Float64}...; thin_prop = 0.20)
+function compare_AICs(AICs::Vector{Float64}...)
     num_models = length(AICs)
     results = Matrix{Int64}(zeros(num_models, 3))
-    AICs = [AICs[i][sample(1:length(AICs[i]), trunc(Int64, thin_prop * length(AICs[i])), replace = true)] for i in 1:num_models]
-    for AIC in Iterators.product(AICs...) # All combinations of the AIC values
-        try
-            AIC_res = compare_AICs(AIC...)
-            for (i, Δᵢ_result) in pairs(AIC_res)
-                    @inbounds results[i, Δᵢ_result] += 1
-            end
-        catch err
-            if err isa InterruptException
-                println("Function terminated by user.")
-                rethrow(err)
-            else
-                throw(err)
-            end
+    B = minimum(length.(AICs))
+    num_comparisons = B
+    AICs = [AICs[j][i] for i in 1:B, j in 1:num_models]
+    for AIC in eachrow(AICs)
+        AIC_res = compare_AICs(AIC...)
+        for (i, Δᵢ_result) in enumerate(AIC_res)
+            @inbounds results[i, Δᵢ_result] += 1
         end
     end
-    num_comparisons = prod(length.(AICs))
     return results / num_comparisons
 end
 
@@ -112,7 +104,7 @@ end
 
 Compare several bootstrapped models using AIC.
 """
-function compare_AICs(x, t, u, models::Union{BootResults,BasisBootResults}...; correct = true, thin_prop = 0.20)
+function compare_AICs(x, t, u, models::Union{BootResults,BasisBootResults}...; correct = true)
     AICs = [AIC(bgp, x, t, u; correct = correct) for bgp in models]
-    return compare_AICs(AICs...; thin_prop)
+    return compare_AICs(AICs...)
 end
