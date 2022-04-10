@@ -118,57 +118,6 @@ function compute_ribbon_features(x; level = 0.05)
 end
     
 """
-    error_comp(bgp, solns_all, x, t, u; level = 0.05)
-
-Computes the error between solutions to a PDE compared to data `(x, t, u)` from the bootstrapping procedure.
-The error measure used is `median(100 * (sum of absolute errors) / maximum(u))`.
-
-# Arguments 
-- `bgp`: Bootstrapping results.
-- `solns_all`: PDE solutions.
-- `x`: Spatial data.
-- `t`: Temporal data.
-- `u`: Density data.
-
-# Keyword Arguments 
-- `level = 0.05`: Level for the confidence interval.
-- `compute_mean = false`: Whether to only report the mean.
-
-# Outputs 
-- `err_CI`: `100(1-level)%` confidence interval for the error.
-"""
-function error_comp(bgp, solns_all, x, t, u; level = 0.05, compute_mean = false)
-    B = size(bgp.zvals, 2)
-    errs = Vector{Float64}(undef, B)
-    time_values = Array{Bool}(undef, length(t), length(bgp.pde_setup.δt))
-    closest_idx = Vector{Vector{Int64}}(undef, length(bgp.pde_setup.δt))
-    iterate_idx = Vector{Vector{Int64}}(undef, length(bgp.pde_setup.δt))
-    for j = 1:length(unique(t))
-        @views time_values[:, j] .= t .== bgp.pde_setup.δt[j]
-        @views closest_idx[j] = searchsortednearest.(Ref(bgp.pde_setup.meshPoints), x[time_values[:, j]]) # Use Ref() so that we broadcast only on x[time_values[:, j]] and not the mesh points
-        @views iterate_idx[j] = findall(time_values[:, j])
-    end
-    store_err = Vector{Float64}(undef, length(x))
-    for b in 1:B
-        idx = 1
-        for j in 1:length(unique(t))
-            for (k, i) in enumerate(iterate_idx[j])
-                exact = u[i]
-                approx = solns_all[closest_idx[j][k], b, j]
-                store_err[idx] = 100abs(exact - approx) / (maximum(u))
-                idx += 1
-            end
-        end
-        errs[b] = median(store_err)
-    end
-    if compute_mean
-        return mean(errs)
-    else
-        return [quantile(errs, level / 2), quantile(errs, 1 - level / 2)]
-    end
-end
-
-"""
     update_results(bgp, bgp_new, mechanism)
 
 Updates the results in `bgp` with new results `bgp_new` for a re-estimated `mechanism`.
