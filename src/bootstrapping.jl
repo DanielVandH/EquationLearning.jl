@@ -457,6 +457,8 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
 
     ## Now do the equation learning 
     glnodes, glweights = gausslegendre(length(RuN.du))
+    uvals = LinRange(0, maximum(u), 100)
+    tvals = LinRange(0, maximum(t), 100)
     j = 1
     while j ≤ bootstrap_setup.B
         # Draw from N(0, 1) for sampling from the Gaussian process 
@@ -497,6 +499,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
                 inIdx, unscaled_t̃, tt, d, r,
                 errs, MSE, optim_setup,
                 iterate_idx, closest_idx, glnodes, glweights, bootstrap_setup.show_losses, σₙ, bootstrap_setup.init_weight,
+                uvals, tvals,
                 PDEkwargs...)
         catch err
             if err isa InterruptException
@@ -508,6 +511,8 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
         if !flag
             j += 1
             print("Bootstrapping: Step $j of $(bootstrap_setup.B). Previous objective value: $(minimum(obj_values)).\u001b[1000D")
+        else 
+            throw("Error occurred.")
         end
     end
 
