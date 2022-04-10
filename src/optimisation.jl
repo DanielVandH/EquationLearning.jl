@@ -10,6 +10,77 @@
 #####################################################################
 
 """
+    check_constraints(αβγ, T::Function, D::Function, R::Function, α, β, γ, T_params, D_params, R_params, 
+        finalTime, maxf, glnodes, glweights, RuN, uvals, tvals)
+
+Checks if the current parameter values violate the constraints `D > 0`, `T > 0`, `∫R > 0`.
+
+# Arguments 
+- `αβγ`: The parameter values for the delay, diffusion, and reaction terms, given in the form `[α, β, γ]`.
+- `T::Function`: The delay function, given in the form `T(t, α...)`.
+- `D::Function`: The diffusion function, given in the form `D(u, β...)`.
+- `R::Function`: The reaction function, given in the form `R(u, γ...)`.
+- `α`: Initial estimates for the delay parameters.
+- `β`: Initial estimates for the diffusion parameters. 
+- `γ`: Initial estimates for the reaction parameters.
+- `T_params`: Additional known parameters for the delay function.
+- `D_params`: Additional known parameters for the diffusion function.
+- `R_params`: Additional known parameters for the reaction function. 
+- `finalTime`: The final time to give the solution to the PDE at.
+- `maxf`: The maximum value of `f`.
+- `glnodes`: Gauss-Legendre quadrature nodes.
+- `glweights`: Gauss-Legendre quadrature weights.
+- `RuN`: For storing values of the reaction function at Gauss-Legendre quadrature nodes.
+- `uvals`: Values for `u` used for testing constraints. 
+- `tvals`: Values for `t` used for testing constraints.
+
+# Output 
+- `true` is any of the constraints are violated, and `false` otherwise.
+"""
+function check_constraints(αβγ, T::Function, D::Function, R::Function, α, β, γ, T_params, D_params, R_params, 
+    finalTime, maxf, glnodes, glweights, RuN, uvals, tvals)
+    # Check reaction: ∫R > 0 
+    RuN = get_tmp(RuN, first(αβγ))
+    Reaction = u -> R(maxf / 2 * (u + 1), γ, R_params) # This function is taking the interval [0, fmax] into [-1, 1] to use Gauss-Legendre quadrature; ignoring the fmax/2 Jacobian in the integrand since this is positive anyway
+    @inbounds for idx in eachindex(glnodes)
+        RuN[idx] = Reaction(glnodes[idx])
+    end
+    Ival = dot(glweights, RuN)
+    if Ival < 0.0 
+        return true 
+    end
+    # Check diffusion: D > 0 
+    for u in uvals
+        if D(u, β, D_params) < 0.0
+            return true 
+        end
+    end
+    # Check delay: T > 0 
+    for t in tvals
+        if T(t, α, T_params) < 0.0
+            return true 
+        end
+    end
+    # Else, constraints are satisfied 
+    return false 
+end
+
+"""
+    check_constraints(Tval, Dval)
+
+Checks if `Tval < 0.0` or if `Dval < 0.0`. If either of these conditions are true, returns `true`; otherwise `false`.
+"""
+function check_constraints(Tval, Dval)
+    if Tval < 0.0 
+        return true 
+    end
+    if Dval < 0.0 
+        return true 
+    end
+    return false 
+end
+
+"""
     loss_function(αβγ; <keyword arguments>)
 
 Computes the loss function at `αβγ`.
@@ -67,6 +138,8 @@ Computes the loss function at `αβγ`.
 - `show_losses`: Whether to print the individual loss functions to the REPL during the optimisation process.
 - `σₙ`: The standard deviation of the observation noise of the Gaussian process.
 - `init_weight`: Weight factor for the initial condition for the GLS errors.
+- `uvals`: Values for `u` used for testing constraints. 
+- `tvals`: Values for `t` used for testing constraints.
 - `PDEkwargs...`: The keyword arguments to use in `DifferentialEquations.solve`.
 
 # Extended help
@@ -86,22 +159,14 @@ function loss_function(αβγ; u,
     T, D, D′, R, R′,
     initialCondition, finalTime, EQLalg, δt, SSEArray, Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
     inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE, glnodes, glweights, maxf,
-    D_params, R_params, T_params, iterate_idx, closest_idx, show_losses, σₙ, init_weight, PDEkwargs...)
+    D_params, R_params, T_params, iterate_idx, closest_idx, show_losses, σₙ, init_weight, uvals, tvals, PDEkwargs...)
     α = @views αβγ[1:tt]
     β = @views αβγ[(tt+1):(tt+d)]
     γ = @views αβγ[(tt+d+1):(tt+d+r)]
-    RuN = get_tmp(RuN, first(αβγ)) # This extracts the cache array with the same type as the elements in αβγ
     total_loss = eltype(αβγ)(0.0) # eltype ensures we get the correct type for the dual numbers
-    Reaction = u -> R(maxf / 2 * (u + 1), γ, R_params) # This function is taking the interval [0, fmax] into [-1, 1] to use Gauss-Legendre quadrature; ignoring the fmax/2 Jacobian in the integrand since this is positive anyway
-    @inbounds for idx in eachindex(glnodes)
-        RuN[idx] = Reaction(glnodes[idx])
-    end
-    Ival = dot(glweights, RuN) # Integrate the reaction curve over [0, fmax] using Gauss-Legendre quadrature
     local GLSC = Inf # So it can be displayed later on if needed - local allows it to enter loops
     local PDEC = Inf
-    if Ival < 0.0 # Negative area ⟹ method won't converge
-        return Inf
-    elseif D(0.0, β, D_params) < 0.0 || D(0.5maxf, β, D_params) < 0.0 || D(maxf, β, D_params) < 0.0 || T(0.0, α, T_params) < 0.0 || T(0.5finalTime, α, T_params) < 0.0 || T(finalTime, α, T_params) < 0.0 # Check for negative diffusion and delay. More efficient to just check problems at start, midpoint, and endpoint rather than an entire array — should usually be the same.
+    if check_constraints(αβγ, T, D, R, α, β, γ, T_params, D_params, R_params, finalTime, maxf, glnodes, glweights, RuN, uvals, tvals)
         return Inf
     else
         try
@@ -144,13 +209,12 @@ function loss_function(αβγ; u,
                 D′uP[idx] = D′(f[idx], β, D_params)
                 TuP[idx] = T(unscaled_t̃[idx], α, T_params)
                 errs[j] = abs2(fₜ[idx] - TuP[idx] * (D′uP[idx] * fₓ[idx]^2 + DuP[idx] * fₓₓ[idx] + RuP[idx]))
+                if check_constraints(TuP[idx], DuP[idx])
+                    return Inf 
+                end
             end
-            if DuP[inIdx[1]] < 0.0 || DuP[inIdx[end>>1]] < 0.0 || DuP[inIdx[end]] < 0.0 || TuP[inIdx[1]] < 0.0 || TuP[inIdx[end>>1]] < 0.0 || TuP[inIdx[end]] < 0.0
-                return Inf
-            else
-                PDEC = obj_scale_PDE(mean(errs))
-                total_loss += PDEC
-            end
+            PDEC = obj_scale_PDE(mean(errs))
+            total_loss += PDEC
         end
     end
     if show_losses
@@ -224,6 +288,8 @@ Estimate values for the delay, diffusion, and reaction parameters. See [`bootstr
 - `show_losses`: `true` if the loss function should be printed to the REPL throughout the optimisation process, and `false` otherwise.
 - `σₙ`: The standard deviation of the observation noise, estimated from the Gaussian process.
 - `init_weight`: Weight factor for the initial condition for the GLS errors.
+- `uvals`: Values for `u` used for testing constraints. 
+- `tvals`: Values for `t` used for testing constraints.
 - `PDEkwargs...`: The keyword arguments to use in `DifferentialEquations.solve`.
 
 # Outputs 
@@ -240,7 +306,7 @@ function learn_equations!(x, t, u,
     Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
     inIdx, unscaled_t̃, tt, d, r,
     errs, MSE, optim_setup,
-    iterate_idx, closest_idx, glnodes, glweights, show_losses, σₙ, init_weight,
+    iterate_idx, closest_idx, glnodes, glweights, show_losses, σₙ, init_weight, uvals, tvals,
     PDEkwargs...)
     #@assert length(obj_values) == size(stacked_params, 2) "The number of objective values must equal the provided number of initial parameter estimate restarts."
 
@@ -254,7 +320,9 @@ function learn_equations!(x, t, u,
         δt, SSEArray, Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
         inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE,
         glnodes, glweights, maxf, D_params, R_params, T_params,
-        iterate_idx, closest_idx, show_losses, σₙ, init_weight, PDEkwargs...)
+        iterate_idx, closest_idx, show_losses, σₙ, init_weight, 
+        uvals, tvals,
+        PDEkwargs...)
 
     # Define the optimisation function 
     if constrained
