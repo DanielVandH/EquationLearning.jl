@@ -7,7 +7,7 @@ makedocs(sitename="EquationLearning.jl Documentation",
             "Home" => "home.md",
             "VandenHeuvel et al. (2022)" => "paper.md",
             "Tutorial" => "tut.md",
-            "References" => "ref.md"
+            "Manual" => "ref.md"
          ],
          format = Documenter.HTML(prettyurls = false)
 )

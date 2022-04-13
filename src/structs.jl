@@ -30,7 +30,7 @@ Setup for the Gaussian processes. See also [`fit_GP`](@ref) and [`bootstrap_gp`]
 - `GP_Restarts::Int`: Number of times to restart the optimiser. See [`opt_restart!`](@ref).
 - `μ::Union{Missing, Vector{Float64}}`: Either `Nothing` or a stored mean vector for the Gaussian process. 
 - `L::Union{Missing, LowerTriangular{Float64}}`: Either `Nothing` or a stored Cholesky factor for the Gaussian process.
-- `nugget::Float64`: A term to add to the correlation matrix to force the covariance matrix to be symmetric positive definite.
+- `nugget::Float64`: Nugget term to add to the covariance matrix to be symmetric positive definite. This nugget is adapted to the blocks of the matrix based on the derivatives, as described in our paper.
 - `gp::Union{Missing, GPBase}`: Either `Nothing` or a stored Gaussian process. See also [`fit_GP`](@ref).
 """
 struct GP_Setup
@@ -132,10 +132,6 @@ function Bootstrap_Setup(x::AbstractVector, t::AbstractVector;
     obj_scale_PDE=x -> x,
     init_weight=10.0,
     show_losses=false)
-    #@assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
-    #@assert B > 0 "The number of bootstrap samples must be a positive integer."
-    #@assert all(0 .≤ τ .≤ 1.0) "The threshold tolerances in τ must be between 0.0 and 1.0."
-    #@assert Optim_Restarts > 0 "The number of restarts mus tbe a positive integer."
     return Bootstrap_Setup(bootₓ, bootₜ, B, τ, Optim_Restarts, constrained, obj_scale_GLS, obj_scale_PDE, init_weight, show_losses)
 end
 
