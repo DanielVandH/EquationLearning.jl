@@ -37,7 +37,7 @@ Checks if the current parameter values violate the constraints `D > 0`, `T > 0`,
 # Output 
 - `true` is any of the constraints are violated, and `false` otherwise.
 """
-function check_constraints(αβγ, T::Function, D::Function, R::Function, α, β, γ, T_params, D_params, R_params, 
+function check_constraints(αβγ, T::Function, D::Function, R::Function, α, β, γ, T_params, D_params, R_params,
     finalTime, maxf, glnodes, glweights, RuN, uvals, tvals)
     # Check reaction: ∫R > 0 
     RuN = get_tmp(RuN, first(αβγ))
@@ -46,23 +46,23 @@ function check_constraints(αβγ, T::Function, D::Function, R::Function, α, β
         RuN[idx] = Reaction(glnodes[idx])
     end
     Ival = dot(glweights, RuN)
-    if Ival < 0.0 
-        return true 
+    if Ival < 0.0
+        return true
     end
     # Check diffusion: D > 0 
     for u in uvals
         if D(u, β, D_params) < 0.0
-            return true 
+            return true
         end
     end
     # Check delay: T > 0 
     for t in tvals
         if T(t, α, T_params) < 0.0
-            return true 
+            return true
         end
     end
     # Else, constraints are satisfied 
-    return false 
+    return false
 end
 
 """
@@ -71,13 +71,13 @@ end
 Checks if `Tval < 0.0` or if `Dval < 0.0`. If either of these conditions are true, returns `true`; otherwise `false`.
 """
 function check_constraints(Tval, Dval)
-    if Tval < 0.0 
-        return true 
+    if Tval < 0.0
+        return true
     end
-    if Dval < 0.0 
-        return true 
+    if Dval < 0.0
+        return true
     end
-    return false 
+    return false
 end
 
 """
@@ -174,7 +174,7 @@ function loss_function(αβγ; u,
             MSE = get_tmp(MSE, first(αβγ))
             p = (N, V, Δx, LHS..., RHS..., Du, Ru, D′u, R′u, T, D, R, D′, R′, α, β, γ, D_params, R_params, T_params)
             prob = ODEProblem(sysdegeneral!, convert.(eltype(αβγ), initialCondition), (0.0, finalTime), p)
-            SSEArray .= hcat(DifferentialEquations.solve(prob, EQLalg, saveat = δt; PDEkwargs...).u...)
+            SSEArray .= hcat(DifferentialEquations.solve(prob, EQLalg, saveat=δt; PDEkwargs...).u...)
             for j = 1:length(δt)
                 for (k, i) in enumerate(iterate_idx[j])
                     if δt[j] > 0.0
@@ -182,7 +182,7 @@ function loss_function(αβγ; u,
                         MSE[i] = abs2((u[i] - val) / σₙ)
                     else
                         val = SSEArray[closest_idx[j][k], j]
-                        MSE[i] = init_weight*abs2((u[i] - val) / σₙ)
+                        MSE[i] = init_weight * abs2((u[i] - val) / σₙ)
                     end
                 end
             end
@@ -210,7 +210,7 @@ function loss_function(αβγ; u,
                 TuP[idx] = T(unscaled_t̃[idx], α, T_params)
                 errs[j] = abs2(fₜ[idx] - TuP[idx] * (D′uP[idx] * fₓ[idx]^2 + DuP[idx] * fₓₓ[idx] + RuP[idx]))
                 if check_constraints(TuP[idx], DuP[idx])
-                    return Inf 
+                    return Inf
                 end
             end
             PDEC = obj_scale_PDE(mean(errs))
@@ -316,19 +316,19 @@ function learn_equations!(x, t, u,
         f, fₓ, fₓₓ, fₜ,
         N, V, Δx, LHS, RHS,
         T, D, D′, R, R′,
-        initialCondition, finalTime, EQLalg = alg,
+        initialCondition, finalTime, EQLalg=alg,
         δt, SSEArray, Du, Ru, D′u, R′u, TuP, DuP, RuP, D′uP, RuN,
         inIdx, unscaled_t̃, tt, d, r, errs, MSE, obj_scale_GLS, obj_scale_PDE,
         glnodes, glweights, maxf, D_params, R_params, T_params,
-        iterate_idx, closest_idx, show_losses, σₙ, init_weight, 
+        iterate_idx, closest_idx, show_losses, σₙ, init_weight,
         uvals, tvals,
         PDEkwargs...)
 
     # Define the optimisation function 
     if constrained
-        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, lowers, uppers, αβγ₀, Fminbox(LBFGS()), optim_setup; autodiff = :forward)
+        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, lowers, uppers, αβγ₀, Fminbox(LBFGS()), optim_setup; autodiff=:forward)
     else
-        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, αβγ₀, LBFGS(), optim_setup; autodiff = :forward)
+        fit_fnc = αβγ₀ -> Optim.optimize(optim_fnc, αβγ₀, LBFGS(), optim_setup; autodiff=:forward)
     end
 
     # Optimise 

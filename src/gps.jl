@@ -34,7 +34,7 @@ initial estimates are chosen based on provided ranges for the hyperparameters an
 # Keyword Arguments 
 - `num_restarts = 50`: The number of restarts to perform.
 """
-function opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts = 50)
+function opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts=50)
     #@assert length(ℓₓ) == length(ℓₜ) == length(σ) == length(σₙ) == 2 "The provided hyperparameters must be given as vectors of length 2 providing upper and lower bounds."
     #@assert issorted(ℓₓ) && issorted(ℓₜ) && issorted(σ) && issorted(σₙ) "The provided ranges for the hyperparameters must be given as (lower, upper)."
 
@@ -46,7 +46,7 @@ function opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts = 50)
     else
         new_params = [mean(ℓₓ); mean(ℓₜ); mean(σ); mean(σₙ)] # Use mean of lower/upper bounds when no restarts are required
     end
-    
+
     # Optimise
     obj_values = zeros(num_restarts)
     for j = 1:num_restarts
@@ -86,8 +86,8 @@ Fits a Gaussian process with data `(x, t)` using the targets in `u`.
 # Outputs 
 - `gp`: The fitted Gaussian process.
 """
-function fit_GP(x, t, u; ℓₓ = log.([1e-4, 1.0]), ℓₜ = log.([1e-4, 1.0]),
-    σ = log.([1e-1, 2std(u)]), σₙ = log.([1e-5, 2std(u)]), num_restarts = 50)
+function fit_GP(x, t, u; ℓₓ=log.([1e-4, 1.0]), ℓₜ=log.([1e-4, 1.0]),
+    σ=log.([1e-1, 2std(u)]), σₙ=log.([1e-5, 2std(u)]), num_restarts=50)
     #@assert length(x) == length(t) == length(u) "The provided data (x, t, u) must all be the same length."
 
     # Define the GP 
@@ -108,7 +108,7 @@ function fit_GP(x, t, u; ℓₓ = log.([1e-4, 1.0]), ℓₜ = log.([1e-4, 1.0]),
     gp = GPE(X, u, meanFunc, covFunc, -2.0)
 
     ## Obtain num_restarts random estimates for the hyperparameters
-    opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts = num_restarts)
+    opt_restart!(gp, ℓₓ, ℓₜ, σ, σₙ; num_restarts=num_restarts)
     return gp
 end
 
@@ -118,7 +118,7 @@ end
 Method for calling [`fit_GP`](@ref) with a setup defined by [`GP_Setup`](@ref).
 """
 function fit_GP(x, t, u, setup::GP_Setup)
-    return fit_GP(x, t, u; ℓₓ = setup.ℓₓ, ℓₜ = setup.ℓₜ, σ = setup.σ, σₙ = setup.σₙ, num_restarts = setup.GP_Restarts)
+    return fit_GP(x, t, u; ℓₓ=setup.ℓₓ, ℓₜ=setup.ℓₜ, σ=setup.σ, σₙ=setup.σₙ, num_restarts=setup.GP_Restarts)
 end
 
 @doc "See [`compute_joint_GP`](@ref) for details." @inline function dkxⱼ(x₁, t₁, x₂, t₂, ℓ₁, ℓ₂)
@@ -223,7 +223,7 @@ julia> ccall((:openblas_get_num_threads64_, Base.libblas_name), Cint, ()) # In c
 julia> LinearAlgebra.BLAS.set_num_threads(1)
 ```
 """
-function compute_joint_GP(gp::GPBase, X̃; nugget = 1e-10)
+function compute_joint_GP(gp::GPBase, X̃; nugget=1e-10)
     #@assert size(X̃, 1) == 2 "The test matrix must have two rows only."
 
     # Extract the original data matrix 
@@ -323,17 +323,17 @@ function compute_joint_GP(gp::GPBase, X̃; nugget = 1e-10)
     @views tr22 = tr(Σ[fₜ_idx, fₜ_idx])
     @views tr33 = tr(Σ[fₓ_idx, fₓ_idx])
     @views tr44 = tr(Σ[fₓₓ_idx, fₓₓ_idx])
-    tr22_11 = tr22/tr11 
-    tr33_11 = tr33/tr11 
-    tr44_11 = tr44/tr11
-    η₁ = nugget 
-    η₂ = tr22_11*nugget 
-    η₃ = tr33_11*nugget
-    η₄ = tr44_11*nugget
+    tr22_11 = tr22 / tr11
+    tr33_11 = tr33 / tr11
+    tr44_11 = tr44 / tr11
+    η₁ = nugget
+    η₂ = tr22_11 * nugget
+    η₃ = tr33_11 * nugget
+    η₄ = tr44_11 * nugget
     for j = 1:nₓnₜ
         Σ[j, j] += η₁
         Σ[j+nₓnₜ, j+nₓnₜ] += η₂
-        Σ[j+2nₓnₜ, j+2nₓnₜ] += η₃ 
+        Σ[j+2nₓnₜ, j+2nₓnₜ] += η₃
         Σ[j+3nₓnₜ, j+3nₓnₜ] += η₄
     end
     chol = cholesky(Σ)
@@ -392,6 +392,6 @@ joint Gaussian process defined by the data `(x, t, u)`. See also
 function precompute_gp_mean(x, t, u, ℓₓ, ℓₜ, σ, σₙ, nugget, num_restarts, bootstrap_setup::Bootstrap_Setup)
     gp = fit_GP(x, t, u; ℓₓ, ℓₜ, σ, σₙ, num_restarts)
     _, _, _, _, _, _, Xₛ, _, _ = bootstrap_grid(x, t, bootstrap_setup.bootₓ, bootstrap_setup.bootₜ)
-    μ, L = compute_joint_GP(gp, Xₛ; nugget = nugget)
+    μ, L = compute_joint_GP(gp, Xₛ; nugget=nugget)
     return gp, μ, L
 end

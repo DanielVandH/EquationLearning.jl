@@ -94,18 +94,18 @@ function jacdegeneral!(J, u, p, t)
         RR′[j] = R′(uval, rb, R_params)
     end
     Tt = T(t, tb, T_params)
-    @muladd @inbounds begin 
-        J[1, 1] = Tt * (RR′[1] - (DD[1] + DD[2])/(2*V[1]*h[1]) - DD′[1]*(u[1] - u[2])/(2*V[1]*h[1]) + c₀*DD′[2]/(V[1]*b₀) - a₀*DD[1]/(V[1]*b₀) - a₀*u[1]*DD′[1]/(V[1]*b₀))
-        J[1, 2] = Tt * ((DD[1] + DD[2])/(2V[1]*h[1]) - DD′[2]*(u[1] - u[2])/(2V[1]*h[1]))
+    @muladd @inbounds begin
+        J[1, 1] = Tt * (RR′[1] - (DD[1] + DD[2]) / (2 * V[1] * h[1]) - DD′[1] * (u[1] - u[2]) / (2 * V[1] * h[1]) + c₀ * DD′[2] / (V[1] * b₀) - a₀ * DD[1] / (V[1] * b₀) - a₀ * u[1] * DD′[1] / (V[1] * b₀))
+        J[1, 2] = Tt * ((DD[1] + DD[2]) / (2V[1] * h[1]) - DD′[2] * (u[1] - u[2]) / (2V[1] * h[1]))
         for i = 2:(N-1)
-            J[i, i-1] = Tt * ((DD[i] + DD[i+1])/(2V[i]*h[i]) + DD′[i-1]*(u[i-1] - u[i])/(2V[i]*h[i-1]))
-            J[i, i] = Tt * (RR′[i] - (DD[i] + DD[i+1])/(2V[i]*h[i]) - (DD[i-1] - DD[i])/(2V[i]*h[i-1]) - DD′[i]*(u[i-1] - u[i])/(2V[i]*h[i-1]) - DD′[i]*(u[i] - u[i+1])/(2V[i]*h[i]))
-            J[i, i+1] = Tt * ((DD[i-1] - DD[i])/(2V[i]*h[i-1]) - DD′[i+1]*(u[i] - u[i+1])/(2V[i]*h[i]))
+            J[i, i-1] = Tt * ((DD[i] + DD[i+1]) / (2V[i] * h[i]) + DD′[i-1] * (u[i-1] - u[i]) / (2V[i] * h[i-1]))
+            J[i, i] = Tt * (RR′[i] - (DD[i] + DD[i+1]) / (2V[i] * h[i]) - (DD[i-1] - DD[i]) / (2V[i] * h[i-1]) - DD′[i] * (u[i-1] - u[i]) / (2V[i] * h[i-1]) - DD′[i] * (u[i] - u[i+1]) / (2V[i] * h[i]))
+            J[i, i+1] = Tt * ((DD[i-1] - DD[i]) / (2V[i] * h[i-1]) - DD′[i+1] * (u[i] - u[i+1]) / (2V[i] * h[i]))
         end
-        J[N, N-1] = Tt * ((DD[N] + DD[N-1])/(2V[N]*h[N-1]) - DD′[N-1]*(u[N] - u[N-1])/(2V[N]*h[N-1]))
-        J[N, N] = Tt * (RR′[N] - (DD[N] + DD[N-1])/(2V[N]*h[N-1]) - DD′[N]*(u[N] - u[N-1])/(2V[N]*h[N-1]) + c₁*DD′[N]/(V[N]*b₁) - a₁*DD[N]/(V[N]*b₁) - a₁u[N]*DD′[N]/(V[N]*b₁))
+        J[N, N-1] = Tt * ((DD[N] + DD[N-1]) / (2V[N] * h[N-1]) - DD′[N-1] * (u[N] - u[N-1]) / (2V[N] * h[N-1]))
+        J[N, N] = Tt * (RR′[N] - (DD[N] + DD[N-1]) / (2V[N] * h[N-1]) - DD′[N] * (u[N] - u[N-1]) / (2V[N] * h[N-1]) + c₁ * DD′[N] / (V[N] * b₁) - a₁ * DD[N] / (V[N] * b₁) - a₁u[N] * DD′[N] / (V[N] * b₁))
     end
-    return nothing 
+    return nothing
 end
 
 """
@@ -126,19 +126,19 @@ Computes initial conditions for the bootstrap iterates in `bgp`. See also [`boot
 # Outputs 
 - `initialCondition_all`: The initial condition to use for each bootstrap iterate, with the `j`th column corresponding to the `j`th bootstrap sample.
 """
-function compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp::Union{BootResults, BasisBootResults}, N, B, meshPoints)
+function compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp::Union{BootResults,BasisBootResults}, N, B, meshPoints)
     #@assert ICType ∈ ["data", "gp"] "The provided ICType must be either \"data\" or \"gp\"."
     initialCondition_all = zeros(N, B)
     @views if ICType == "data"
         position₁ = x_pde[t_pde.==0.0]
         u0 = u_pde[t_pde.==0.0]
-        initialCondition_all .= reshape(repeat(Dierckx.Spline1D(position₁, u0; k = 1)(meshPoints), outer = B), (N, B)) # Same initial condition for all B replicates 
+        initialCondition_all .= reshape(repeat(Dierckx.Spline1D(position₁, u0; k=1)(meshPoints), outer=B), (N, B)) # Same initial condition for all B replicates 
     elseif ICType == "gp"
         nₓnₜ = convert(Int64, length(bgp.μ) / 4)
         bigf = (bgp.μ.+bgp.L*bgp.zvals)[1:nₓnₜ, :] # Extract u from [f;∂ₜf;∂ₓf;∂ₓₓf]
         initialCondition_all_nospline = bigf[bgp.Xₛ[2, :].==0.0, :] |> x -> max.(x, 0.0) # Compute initial conditions for all sampled curves, then make them non-negative
         for j = 1:B
-            initialCondition_all[:, j] .= Dierckx.Spline1D(bgp.bootₓ, initialCondition_all_nospline[:, j]; k = 1)(meshPoints)
+            initialCondition_all[:, j] .= Dierckx.Spline1D(bgp.bootₓ, initialCondition_all_nospline[:, j]; k=1)(meshPoints)
         end
     end
     return initialCondition_all
@@ -149,7 +149,7 @@ end
 
 Method for calling [`compute_initial_conditions`] when providing only `bgp` and the data. 
 """
-function compute_initial_conditions(x_pde, t_pde, u_pde, bgp::Union{BootResults, BasisBootResults}, ICType)
+function compute_initial_conditions(x_pde, t_pde, u_pde, bgp::Union{BootResults,BasisBootResults}, ICType)
     return compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp, length(bgp.pde_setup.meshPoints), bgp.bootstrap_setup.B, bgp.pde_setup.meshPoints)
 end
 
@@ -179,8 +179,8 @@ ensuring that the delay and diffusion values are strictly nonnegative, and the a
 """
 function compute_valid_pde_indices(bgp::BootResults, u_pde, num_t, num_u, B, tr, dr, rr, nodes, weights, D_params, R_params, T_params)
     idx = Array{Int64}(undef, 0)
-    u_vals = range(minimum(bgp.gp.y), maximum(bgp.gp.y), length = num_u)
-    t_vals = collect(range(minimum(bgp.Xₛⁿ[2, :]), maximum(bgp.Xₛⁿ[2, :]), length = num_t))
+    u_vals = range(minimum(bgp.gp.y), maximum(bgp.gp.y), length=num_u)
+    t_vals = collect(range(minimum(bgp.Xₛⁿ[2, :]), maximum(bgp.Xₛⁿ[2, :]), length=num_t))
     Tuv = zeros(num_t, 1)
     Duv = zeros(num_u, 1)
     max_u = maximum(u_pde)
@@ -228,7 +228,7 @@ The `_pde` subscript is used to indicate that these data need not be the same as
 For example, we may have 3 replicates of some data which we would easily use in [`bootstrap_gp`](@ref), but for the PDE we would need to average these 
 together for obtaining the solutions.
 """
-function boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.0, ICType = "data")
+function boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples=1.0, ICType="data")
     #@assert 0 < prop_samples ≤ 1.0 "The values of prop_samples must be in (0, 1]."
     #@assert ICType ∈ ["data", "gp"]
     nodes, weights = gausslegendre(5)
@@ -253,7 +253,7 @@ function boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.
     # Solve PDEs
     initialCondition = zeros(N, 1) # Setup cache array
     finalTime = maximum(bgp.pde_setup.δt)
-    sample_idx = StatsBase.sample(idx, rand_pde, replace = false)
+    sample_idx = StatsBase.sample(idx, rand_pde, replace=false)
     Du = zeros(N, 1)
     Ru = zeros(N, 1)
     D′u = zeros(N, 1)
@@ -265,7 +265,7 @@ function boot_pde_solve(bgp::BootResults, x_pde, t_pde, u_pde; prop_samples = 1.
         initialCondition .= initialCondition_all[:, coeff]
         p = (N, V, Δx, bgp.pde_setup.LHS..., bgp.pde_setup.RHS..., Du, Ru, D′u, R′u, bgp.T, bgp.D, bgp.R, bgp.D′, bgp.R′, tr[:, coeff], dr[:, coeff], rr[:, coeff], bgp.D_params, bgp.R_params, bgp.T_params)
         prob = ODEProblem(sysdegeneral!, initialCondition, tspan, p)
-        solns_all[:, pdeidx, :] .= hcat(DifferentialEquations.solve(prob, bgp.pde_setup.alg, saveat = bgp.pde_setup.δt).u...)
+        solns_all[:, pdeidx, :] .= hcat(DifferentialEquations.solve(prob, bgp.pde_setup.alg, saveat=bgp.pde_setup.δt).u...)
         print("Solving PDEs: Step $pdeidx of $rand_pde.\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
     end
 
@@ -293,7 +293,7 @@ The error measure used is `median(100 * (sum of absolute errors) / maximum(u))`.
 # Outputs 
 - `err_CI`: `100(1-level)%` confidence interval for the error.
 """
-function error_comp(bgp, solns_all, x, t, u; level = 0.05, compute_mean = false)
+function error_comp(bgp, solns_all, x, t, u; level=0.05, compute_mean=false)
     B = size(bgp.zvals, 2)
     errs = Vector{Float64}(undef, B)
     time_values = Array{Bool}(undef, length(t), length(bgp.pde_setup.δt))
@@ -311,7 +311,7 @@ function error_comp(bgp, solns_all, x, t, u; level = 0.05, compute_mean = false)
             for (k, i) in enumerate(iterate_idx[j])
                 exact = u[i]
                 approx = solns_all[closest_idx[j][k], b, j]
-                store_err[idx] = 100abs(exact - approx)/max(eps(Float64), abs(exact))
+                store_err[idx] = 100abs(exact - approx) / max(eps(Float64), abs(exact))
                 idx += 1
             end
         end
