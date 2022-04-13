@@ -347,7 +347,7 @@ Summarise the bootstrapping results.
 - `x_scale = 1.0`: Value used for scaling the spatial data (and all other length units, e.g. for diffusion).
 - `t_scale = 1.0`: Value used for scaling the temporal data (and all other time units, e.g. for reaction).
 - `correct = true`: Whether to correct for a small sample size then computing the AICs.
-
+ 
 # Output 
 - `results::AllResults`: Structure containing the results. See [`AllResults`](@ref).
 """
