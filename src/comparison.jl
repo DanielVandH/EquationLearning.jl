@@ -65,7 +65,7 @@ function classify_Δᵢ(Δᵢ::Float64)
     elseif Δᵢ > 8.0
         return 3
     end
-end
+end 
 
 """
     compare_AICs(AICs::Float64...)
