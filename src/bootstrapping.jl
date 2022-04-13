@@ -410,7 +410,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
         T(t[1], α₀, T_params[:, 1])
     catch
         throw("Either the provided vector of delay parameters, α₀ = $α₀, is not of adequate size, or T_params has been incorrectly specified.")
-    end 
+    end  
 
     ## Compute indices for finding nearest points in the spatial mesh to the actual spatial data x, along with indices for specific values of time.
     time_values = Array{Bool}(undef, length(t), length(pde_setup.δt))

@@ -78,3 +78,9 @@ Pages = ["synthetic_data.jl"]
 Modules = [EquationLearning]
 Pages = ["utils.jl"]
 ```
+
+## Links 
+
+```@index
+Modules = [EquationLearning]
+```
