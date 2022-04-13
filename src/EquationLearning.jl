@@ -4,28 +4,28 @@ module EquationLearning
 ## Required packages
 #####################################################################
 
-using DataFrames 
-using Dierckx 
-using DifferentialEquations 
-using FastGaussQuadrature 
-using ForwardDiff 
-using GaussianProcesses 
-using LaTeXStrings 
-using LatinHypercubeSampling 
-using LinearAlgebra 
-using MuladdMacro 
-using ODEInterfaceDiffEq 
-using Optim 
+using DataFrames
+using Dierckx
+using DifferentialEquations
+using FastGaussQuadrature
+using ForwardDiff
+using GaussianProcesses
+using LaTeXStrings
+using LatinHypercubeSampling
+using LinearAlgebra
+using MuladdMacro
+using ODEInterfaceDiffEq
+using Optim
 using CairoMakie
-using PreallocationTools 
-using Printf 
-using StatsBase 
+using PreallocationTools
+using Printf
+using StatsBase
 using Random
 using Setfield
-using KernelDensity   
+using KernelDensity
 using Sundials
 using StaticArrays
-using FLoops 
+using FLoops
 using SharedArrays
 using PrettyTables
 
@@ -49,10 +49,10 @@ include("display.jl")            # Displaying results
 ## Export functions
 #####################################################################
 
-export bootstrap_gp, boot_pde_solve, curve_results, 
-    density_results, delay_product, pde_results, GP_Setup, 
-    Bootstrap_Setup, PDE_Setup, BootResults, density_values, 
-    curve_values, pde_values, error_comp, 
+export bootstrap_gp, boot_pde_solve, curve_results,
+    density_results, delay_product, pde_results, GP_Setup,
+    Bootstrap_Setup, PDE_Setup, BootResults, density_values,
+    curve_values, pde_values, error_comp,
     basis_bootstrap_gp, update_results,
     AIC, compare_AICs, AllResults
 
