@@ -1,5 +1,5 @@
 #####################################################################
-## Load the required package
+## Load the required packages
 #####################################################################
 
 using EquationLearning      # Load our actual package 
@@ -16,8 +16,8 @@ using StatsBase             # For std
 using LinearAlgebra         # For setting number of threads to prevent StackOverflowError
 using Setfield              # For modifying immutable structs
 using Optim                 # For optimisation
-using Printf
-using KernelDensity
+using Printf                # For @sprintf 
+using KernelDensity         # For kernel density estimates
 
 #####################################################################
 ## Set some global parameters 
@@ -34,7 +34,7 @@ legendentries = OrderedDict("0" => LineElement(linestyle=nothing, linewidth=2.0,
 LinearAlgebra.BLAS.set_num_threads(1)
 
 #####################################################################
-## Read in the data from Jin et al. (2016).
+## Read in the data from Jin et al. (2016)
 #####################################################################
 
 function prepare_data(filename) # https://discourse.julialang.org/t/failed-to-precompile-csv-due-to-load-error/70146/2
@@ -63,7 +63,7 @@ end
 K = 1.7e-3 * x_scale^2 # Cell carrying capacity as estimated from Jin et al. (2016).
 
 #####################################################################
-## Figure X: Plotting the density data from Jin et al. (2016).
+## Figure X: Plotting the density data from Jin et al. (2016)
 #####################################################################
 
 assay_plots = Array{Axis}(undef, 3, 2)
@@ -121,7 +121,7 @@ Legend(jin_assay_data_gp_bands_fig[0, 1:2], [values(legendentries)...], [keys(le
 save("figures/jin_assay_data_gp_plots.pdf", jin_assay_data_gp_bands_fig, px_per_unit=2)
 
 #####################################################################
-## Figure X: Plotting the space-time diagram for the Gaussian process.
+## Figure X: Plotting the space-time diagram for the Gaussian process
 #####################################################################
 Random.seed!(12991)
 
@@ -702,10 +702,3 @@ res_20_FKD = plot_fisher_kolmogorov_delay(res_20[2].bgp, x_scale, t_scale, "allp
 res_20_GFKPP = plot_generalised_fkpp_delay(res_20[5].bgp, x_scale, t_scale, "lagergrenallplots20000.pdf", colors, 6, assay_data, fontsize)
 
 pde_figs = plot_pde_soln(res_10[2].bgp, res_12[2].bgp, res_14[2].bgp, res_16[2].bgp, res_18[2].bgp, res_20[2].bgp, x_scale, colors, assay_data, fontsize, "allpdeplots.pdf", K)
-
-save("figures/pdeplot10000.pdf", res_10[2].pde_plot, px_per_unit=2)
-save("figures/pdeplot12000.pdf", res_12[2].pde_plot, px_per_unit=2)
-save("figures/pdeplot14000.pdf", res_14[2].pde_plot, px_per_unit=2)
-save("figures/pdeplot16000.pdf", res_16[2].pde_plot, px_per_unit=2)
-save("figures/pdeplot18000.pdf", res_18[2].pde_plot, px_per_unit=2)
-save("figures/pdeplot20000.pdf", res_20[2].pde_plot, px_per_unit=2)
