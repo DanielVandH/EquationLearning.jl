@@ -246,7 +246,7 @@ uppers = [1.01, 1.01, 1.01, 1.01]
 
 ## Fitting the model
 
-We now fit the model. (Since we are not going to be performing any model comparisons in this paper, we do not provide a `zvals` argument; see how we use this argument for model comparison in [VandenHeuvel2022_PaperCode/paper_code.jl](https://github.com/DanielVandH/EquationLearning.jl/blob/5466b87ae7ed3d3d171123ddf3d595d881538490/VandenHeuvel2022_PaperCode/paper_code.jl) by first defining a `zvals` vector and then using `zvals = zvals` in `bootstrap_gp`. These `zvals` are also provided in the struct for the final results, so we could instead not provide them and simply reuse the `zvals` from the first model.) We call the function as:
+We now fit the model. (Since we are not going to be performing any model comparisons in this tutorial, we do not provide a `zvals` argument; see how we use this argument for model comparison in [VandenHeuvel2022_PaperCode/paper_code.jl](https://github.com/DanielVandH/EquationLearning.jl/blob/5466b87ae7ed3d3d171123ddf3d595d881538490/VandenHeuvel2022_PaperCode/paper_code.jl) by first defining a `zvals` vector and then using `zvals = zvals` in `bootstrap_gp`. These `zvals` are also provided in the struct for the final results, so we could instead not provide them and simply reuse the `zvals` from the first model.) We call the function as:
 
 ```julia
 optim_setup = Optim.Options(iterations=10, f_reltol=1e-4, x_reltol=1e-4, g_reltol=1e-4, outer_f_reltol=1e-4, outer_x_reltol=1e-4, outer_g_reltol=1e-4)
