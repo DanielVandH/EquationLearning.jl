@@ -51,10 +51,10 @@ end
 A constructor for [`GP_Setup`](@ref) for some density data `u`. 
     
 # Keyword Arguments
-- `ℓₓ = log.([1e-4, 1.0])`.
-- `ℓₜ = log.([1e-4, 1.0])`.
-- `σ = log.([1e-1, 2std(u)])`.
-- `σₙ = log.([1e-5, 2std(u)])`.
+- `ℓₓ = log.([1e-6, 1.0])`.
+- `ℓₜ = log.([1e-6, 1.0])`.
+- `σ = log.([1e-6, 7std(u)])`.
+- `σₙ = log.([1e-6, 7std(u)])`.
 - `GP_Restarts = 50`.
 - `μ = missing`.
 - `L = missing`.
@@ -62,10 +62,10 @@ A constructor for [`GP_Setup`](@ref) for some density data `u`.
 - `gp = missing`.
 """
 function GP_Setup(u;
-    ℓₓ=log.([1e-4, 1.0]),
-    ℓₜ=log.([1e-4, 1.0]),
-    σ=log.([1e-1, 2std(u)]),
-    σₙ=log.([1e-5, 2std(u)]),
+    ℓₓ=log.([1e-6, 1.0]),
+    ℓₜ=log.([1e-6, 1.0]),
+    σ=log.([1e-6, 7std(u)]),
+    σₙ=log.([1e-6, 7std(u)]),
     GP_Restarts=50,
     μ=missing,
     L=missing,
