@@ -308,9 +308,9 @@ end
 We would typically use the constructor `AllResults(x_pde, t_pde, u_pde, bgp)` for constructing this struct. Since we have scaled the data, we also want to make use of additional keyword arguments to put the data back on the original scale. We thus create the `AllResults` struct for this data as:
 
 ```julia
-delay_scales = [T_params2[1], T_params2[2] / t_scale]
-diffusion_scales = D_params2[1] * x_scale^2 / t_scale
-reaction_scales = R_params2[2] / t_scale
+delay_scales = [T_params[1], T_params[2] / t_scale]
+diffusion_scales = D_params[1] * x_scale^2 / t_scale
+reaction_scales = R_params[2] / t_scale
 res = AllResults(x_pde, t_pde, u_bgp, bgp; delay_scales, diffusion_scales, reaction_scales, x_scale, t_scale, correct = true)
 ```
 

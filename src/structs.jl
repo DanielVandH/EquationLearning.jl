@@ -278,7 +278,7 @@ end
 """
     struct AllResults
 
-Helpful structure for displaying results. This differs from e.g. [`BootResults`] since we also include PDE solutions.
+Helpful structure for displaying results. This differs from e.g. [`BootResults`](@ref) since we also include PDE solutions.
     
 # Fields 
 - `pde_solutions::Array{Float64}`: Solutions for the PDEs with sampled initial conditions.

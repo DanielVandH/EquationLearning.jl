@@ -209,7 +209,7 @@ Solve the PDEs corresponding to the bootstrap iterates in `bgp` obtained from [`
 - `u_pde`: The density data to use for obtaining the initial condition.
 
 # Keyword Arguments 
-- `prop_samples = 1.0`: The proportion of bootstrap samples to compute teh corresponding PDE soluton to.
+- `prop_samples = 1.0`: The proportion of bootstrap samples to compute the corresponding PDE soluton to.
 - `ICType = "data"`: The type of initial condition to use. Should be either `"data"` or `"gp"`.
 
 # Outputs 
