@@ -2,7 +2,13 @@
 
 Documentation for EquationLearning.jl
 
+```@contents
+```
+
+## Functions 
 
 ```@docs 
-fit_gp 
+fit_GP
 ```
+
+## Index
