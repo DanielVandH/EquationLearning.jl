@@ -370,7 +370,7 @@ end
     AllResults(x_pde, t_pde, u_pde, bgp...; <keyword arguments>)
 
     Summarise the bootstrapping results for multiple models. See [`BGPResults`](@ref).
-"""
+"""  
 function AllResults(x_pde, t_pde, u_pde, bgp...;
     delay_scales::AbstractVector, diffusion_scales::AbstractVector, reaction_scales::AbstractVector,
     x_scale=1.0, t_scale=1.0,
