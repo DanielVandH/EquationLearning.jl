@@ -324,7 +324,7 @@ end
 function plot_fisher_kolmogorov_delay(bgp::BootResults, x_scale, t_scale, filename, colors, dat_idx, assay_data, fontsize)
     dat = assay_data[dat_idx]
     x_pde = dat.Position
-    t_pde = dat.Time
+    t_pde = dat.Time 
     u_pde = dat.AvgDens
     pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType="gp")
     pde_data = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType="data")

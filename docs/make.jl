@@ -9,7 +9,8 @@ makedocs(sitename="EquationLearning.jl Documentation",
             "Tutorial" => "tut.md",
             "Manual" => "ref.md"
          ],
-         format = Documenter.HTML(prettyurls = false)
+         format = Documenter.HTML(prettyurls = false),
+         modules = [EquationLearning]
 )
 # Documenter can also automatically deploy documentation to gh-pages.
 # See "Hosting Documentation" and deploydocs() in the Documenter manual

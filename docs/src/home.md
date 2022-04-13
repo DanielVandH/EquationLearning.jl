@@ -1,5 +1,7 @@
 # Equation Learning 
 
+[Click here to go back to the repository](https://github.com/DanielVandH/EquationLearning.jl).
+
 This package allows for the learning of mechanisms $T(t; \mathbf{\alpha})$, $D(u; \mathbf{\beta})$, and $R(u; \mathbf{\gamma})$ for 
 delay, diffusion, and reaction model, for some cell data $u$ and points $(x, t)$, assuming that $u$ satisfies the model
 
