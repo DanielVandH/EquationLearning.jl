@@ -3,7 +3,7 @@
 Documentation for EquationLearning.jl
 tseststestst
 ```@contents
-```
+``` 
 
 ## Functions 
 
