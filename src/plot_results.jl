@@ -4,15 +4,6 @@
 ## This script contains functions for plotting results from the 
 ## equation learning process.
 ##
-## The following functions are defined:
-##  - density_values: Compute the densities for plotting density plots.
-##  - density_results: Plots the densities of the estimates from the 
-##      bootstrapping procedure.
-##  - curve_values: Compute the ribbon features for plotting functional forms.
-##  - curve_results: Plots the learned functional forms for the parameter 
-##      estimates from the bootstrapping procedure.
-##  - pde_results: Plots the PDE solutions for each bootstrap iteration.
-##
 #####################################################################
 
 """

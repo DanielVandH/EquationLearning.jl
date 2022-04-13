@@ -3,10 +3,6 @@
 ##
 ## This script contains certain functions used for estimating parameters.
 ##
-## The following functions are defined:
-##  - loss_function: Computes the loss function. 
-##  - learn_equations!: Estimates the parameter values.
-##
 #####################################################################
 
 """

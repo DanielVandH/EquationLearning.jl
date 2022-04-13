@@ -1,3 +1,11 @@
+#####################################################################
+## Script description: basis_bootstrapping.jl 
+##
+## This script contains certain functions used for the bootstrap
+## equation learning method with the basis function approach.
+##
+#####################################################################
+
 """
     evaluate_basis(coefficients, basis, point)
 

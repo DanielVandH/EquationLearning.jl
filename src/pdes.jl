@@ -5,14 +5,6 @@
 ## partial differential equations used with bootstrapping and computing 
 ## results.
 ##
-## The following functions are defined:
-##  - sysdegeneral!: Computes the system of ODEs in a discretised
-##      delay-reaction-diffusion PDE.
-##  - compute_initial_conditions: Computes initial conditions to use.
-##  - compute_valid_pde_indices: Checks which bootstrap iterates will 
-##      lead to a solution that exists.
-##  - boot_pde_solve: Solve the PDEs for each bootstrap iterate.
-##
 #####################################################################
 
 """
@@ -277,7 +269,7 @@ end
     error_comp(bgp, solns_all, x, t, u; level = 0.05)
 
 Computes the error between solutions to a PDE compared to data `(x, t, u)` from the bootstrapping procedure.
-The error measure used is `median(100 * (sum of absolute errors) / maximum(u))`.
+The error measure used is `median(100 * (absolute errors) / max(eps(Float64), u))`.
 
 # Arguments 
 - `bgp`: Bootstrapping results.

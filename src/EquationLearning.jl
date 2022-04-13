@@ -49,11 +49,26 @@ include("display.jl")            # Displaying results
 ## Export functions
 #####################################################################
 
-export bootstrap_gp, boot_pde_solve, curve_results,
-    density_results, delay_product, pde_results, GP_Setup,
-    Bootstrap_Setup, PDE_Setup, BootResults, density_values,
-    curve_values, pde_values, error_comp,
-    basis_bootstrap_gp, update_results,
-    AIC, compare_AICs, AllResults
+## Bootstrapping 
+export bootstrap_gp, basis_bootstrap_gp, update_results
+
+## Comparison 
+export AIC, compare_AICs
+
+## GPs  
+export fit_GP, compute_joint_GP, precompute_gp_mean
+
+## PDEs   
+export boot_pde_solve, error_comp
+
+## Plotting 
+export density_values, density_results, curve_values, curve_results, pde_values, pde_results, delay_product
+
+## Structs  
+export GP_Setup, Bootstrap_Setup, PDE_Setup, BootResults, BasisBootResults, AllResults
+
+## Synthetic Data  
+export generate_data
+
 
 end

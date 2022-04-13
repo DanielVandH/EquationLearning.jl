@@ -5,15 +5,6 @@
 ## constructors. Some of these functions are used for setting keyword
 ## arguments conveniently in a way that doesn't clutter function 
 ## definitions.
-
-## The following structs are define:
-##  - GP_Setup: A struct that defines the setup for a Gaussian process. 
-##      A constructor is also defined.
-##  - Bootstrap_Setup: A struct for defining the setup for bootstrapping.
-##      A constructor is also defined.
-##  - PDE_setup: A struct for defining the configuration used for PDEs.
-##      A constructor is also defined.
-##  - BootResults: A struct for storing bootstrapping results.
 ##
 #####################################################################
 

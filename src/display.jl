@@ -1,3 +1,11 @@
+#####################################################################
+## Script description: display.jl
+##
+## This script contains a method for displaying results to 
+## the REPL.
+##
+#####################################################################
+
 import Base: show
 
 function Base.show(io::IO, results::AllResults)

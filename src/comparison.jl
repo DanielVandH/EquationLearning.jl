@@ -1,3 +1,11 @@
+#####################################################################
+## Script description: comparison.jl 
+##
+## This script contains certain functions used for performing 
+## model comparison.
+##
+#####################################################################
+
 """
     AIC(bgp::Union{BootResults, BasisBootResults}; correct = true)
 

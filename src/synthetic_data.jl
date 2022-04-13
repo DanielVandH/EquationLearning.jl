@@ -9,10 +9,7 @@
     generate_data(x₀, u₀, T, D, R, α, β, γ, δt, finalTime; <keyword arguments>)
 
 Generate synthetic data from values `(x₀, t₀)` at `t = 0` with exact mechanisms
-`T`, `D`, and `R` for delay, diffusion, and reaction, respectively. A Gaussian process 
-is fit to the data to smooth it, and then that curve is used to generate a smooth initial 
-condition which is then perturbed by noise according to the estimated signal noise from the 
-fitted Gaussian process.
+`T`, `D`, and `R` for delay, diffusion, and reaction, respectively. 
 
 # Arguments 
 - `x₀`: The spatial mesh for points at `t = 0`.

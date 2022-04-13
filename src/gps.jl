@@ -5,17 +5,6 @@
 ## processes, primarily  leveraging the functions provided by 
 ## GaussianProcesses.jl.
 ##
-## The following functions are defined:
-##  - opt_restart!: Method for restarting the optimiser for the 
-##      Gaussian process with many initial guesses.
-##  - fit_GP: Fits a Gaussian process to some provided data.
-##  - dkxⱼ, d⁴kxᵢ²xⱼ², etc: Computing derivatives of the squared 
-##      exponential kernel, for use with compute_joint_GP.
-##  - compute_joint_GP: Computes the arrays required for the joint 
-##      Gaussian process [f, fₜ, fₓ, fₓₓ]. 
-##  - draw_gp!: Draw a random sample from a Gaussian process.
-##  - precompute_gp_mean: Computes tthe Gaussian process using fit_GP and then computes the joint GP mean vector and Cholesky factor using compute_joint_GP.
-##
 #####################################################################
 
 """

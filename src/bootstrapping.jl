@@ -4,15 +4,6 @@
 ## This script contains certain functions used for the bootstrap
 ## equation learning method.
 ##
-## The following functions are defined:
-##  - bootstrap_grid: Used for computing the bootstrapping grid.
-##  - preallocate_bootstrap: Used for preallocating some important 
-##      arrays for bootstrapping.
-##  - preallocate_eqlearn: Used for preallocating some arrays that are 
-##      used for the equation learning component.
-##  - bootstrap_helper: Calls the above three functions.
-##  - bootstrap_gp: Does bootstrapping to learn the functional forms.
-##
 #####################################################################
 
 """
