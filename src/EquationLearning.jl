@@ -14,7 +14,7 @@ using LaTeXStrings
 using LatinHypercubeSampling
 using LinearAlgebra
 using MuladdMacro
-using ODEInterfaceDiffEq
+using ODEInterfaceDiffEq 
 using Optim
 using CairoMakie
 using PreallocationTools
