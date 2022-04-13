@@ -4,5 +4,5 @@ Documentation for EquationLearning.jl
 
 
 ```@docs 
-fit_GP 
+fit_gp 
 ```
