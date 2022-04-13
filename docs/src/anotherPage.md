@@ -1,5 +1,5 @@
 # The Equation Learning Module
-
+asdswwew
  ```@docs
  EquationLearning
  ```
