@@ -51,7 +51,7 @@ Finds the index in `a` that has the smallest `distance` to `x`. Ties go to the s
 # Outputs
 - `i`: The index such that `distance(a[i], a)` is minimised.
 """
-function searchsortednearest(a, x; by = identity, lt = isless, rev = false, distance = (a, b) -> abs(a - b))
+function searchsortednearest(a, x; by=identity, lt=isless, rev=false, distance=(a, b) -> abs(a - b))
     i = searchsortedfirst(a, x; by, lt, rev)
     if i == 1
     elseif i > length(a)
@@ -110,13 +110,13 @@ Computes features for a confidence interval plot for some data `x`.
 - `x_lower`: The `100(`level/2`)%` quantile for each row of `x`.
 - `x_upper`: The `100(`1-level/2`)%` quantile for each row of `x`.
 """
-function compute_ribbon_features(x; level = 0.05)
+function compute_ribbon_features(x; level=0.05)
     x_mean = [mean(r) for r in eachrow(x)]
     x_lower = [quantile(r, level / 2) for r in eachrow(x)]
     x_upper = [quantile(r, 1 - level / 2) for r in eachrow(x)]
     return x_mean, x_lower, x_upper
 end
-    
+
 """
     update_results(bgp, bgp_new, mechanism)
 
