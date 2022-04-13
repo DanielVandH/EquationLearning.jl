@@ -33,7 +33,7 @@ Setup for the Gaussian processes. See also [`fit_GP`](@ref) and [`bootstrap_gp`]
 - `nugget::Float64`: A term to add to the correlation matrix to force the covariance matrix to be symmetric positive definite.
 - `gp::Union{Missing, GPBase}`: Either `Nothing` or a stored Gaussian process. See also [`fit_GP`](@ref).
 """
-struct GP_Setup 
+struct GP_Setup
     ℓₓ::Vector{Float64}
     ℓₜ::Vector{Float64}
     σ::Vector{Float64}
@@ -62,15 +62,15 @@ A constructor for [`GP_Setup`](@ref) for some density data `u`.
 - `gp = missing`.
 """
 function GP_Setup(u;
-    ℓₓ = log.([1e-4, 1.0]),
-    ℓₜ = log.([1e-4, 1.0]),
-    σ = log.([1e-1, 2std(u)]),
-    σₙ = log.([1e-5, 2std(u)]),
-    GP_Restarts = 50,
-    μ = missing,
-    L = missing,
-    nugget = 1e-4,
-    gp = missing)
+    ℓₓ=log.([1e-4, 1.0]),
+    ℓₜ=log.([1e-4, 1.0]),
+    σ=log.([1e-1, 2std(u)]),
+    σₙ=log.([1e-5, 2std(u)]),
+    GP_Restarts=50,
+    μ=missing,
+    L=missing,
+    nugget=1e-4,
+    gp=missing)
     return GP_Setup(promote(ℓₓ, ℓₜ, σ, σₙ)..., Int(GP_Restarts), μ, L, convert(eltype(ℓₓ), nugget), gp)
 end
 
@@ -122,16 +122,16 @@ A constructor for [`Bootstrap_Setup`](@ref) for some spatial data `x` and tempor
 - `show_losses = false`.
 """
 function Bootstrap_Setup(x::AbstractVector, t::AbstractVector;
-    bootₓ = LinRange(extrema(x)..., 80),
-    bootₜ = LinRange(extrema(t)..., 80),
-    B = 100,
-    τ = (0.0, 0.0),
-    Optim_Restarts = 5,
-    constrained = false,
-    obj_scale_GLS = x -> x,
-    obj_scale_PDE = x -> x,
-    init_weight = 10.0,
-    show_losses = false)
+    bootₓ=LinRange(extrema(x)..., 80),
+    bootₜ=LinRange(extrema(t)..., 80),
+    B=100,
+    τ=(0.0, 0.0),
+    Optim_Restarts=5,
+    constrained=false,
+    obj_scale_GLS=x -> x,
+    obj_scale_PDE=x -> x,
+    init_weight=10.0,
+    show_losses=false)
     #@assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
     #@assert B > 0 "The number of bootstrap samples must be a positive integer."
     #@assert all(0 .≤ τ .≤ 1.0) "The threshold tolerances in τ must be between 0.0 and 1.0."
@@ -175,18 +175,18 @@ A constructor for [`PDE_Setup`](@ref) for some spatial data `x` and temporal dat
 - `alg = nothing`.
 """
 function PDE_Setup(x, t;
-    meshPoints = LinRange(extrema(x)..., 500),
-    LHS = [0.0, 1.0, 0.0],
-    RHS = [0.0, -1.0, 0.0],
-    finalTime = maximum(t),
-    δt = finalTime / 4.0,
-    alg = nothing)
+    meshPoints=LinRange(extrema(x)..., 500),
+    LHS=[0.0, 1.0, 0.0],
+    RHS=[0.0, -1.0, 0.0],
+    finalTime=maximum(t),
+    δt=finalTime / 4.0,
+    alg=nothing)
     #@assert length(LHS) == length(RHS) == 3 "The provided boundary condition vectors LHS and RHS must be of length 3."
     #@assert length(x) == length(t) "The spatial data x and length data t must be vectors of equal length."
     #@assert ICType ∈ ["data", "gp"]
     if δt isa Number
         δt = 0:δt:finalTime
-        if length(δt) ≠ length(unique(t)) 
+        if length(δt) ≠ length(unique(t))
             error("Length of δt must be the same as the number of unique time points in t.")
         end
     end
@@ -241,7 +241,7 @@ struct BootResults
     μ::Vector{Float64}
     L::LowerTriangular{Float64}
     gp_setup::GP_Setup
-    bootstrap_setup::Bootstrap_Setup 
+    bootstrap_setup::Bootstrap_Setup
     pde_setup::PDE_Setup
 end
 
@@ -287,7 +287,7 @@ struct BasisBootResults
     μ::Vector{Float64}
     L::LowerTriangular{Float64}
     gp_setup::GP_Setup
-    bootstrap_setup::Bootstrap_Setup 
+    bootstrap_setup::Bootstrap_Setup
     pde_setup::PDE_Setup
 end
 
@@ -315,15 +315,15 @@ Helpful structure for displaying results. This differs from e.g. [`BootResults`]
 struct AllResults
     pde_solutions::Array{Float64}
     AIC::Vector{Float64}
-    bgp::Union{BootResults, BasisBootResults}
+    bgp::Union{BootResults,BasisBootResults}
     delayCIs
     diffusionCIs
     reactionCIs
-    delay_density::Figure 
-    diffusion_density::Figure 
-    reaction_density::Figure 
-    delay_curve::Figure 
-    diffusion_curve::Figure 
+    delay_density::Figure
+    diffusion_density::Figure
+    reaction_density::Figure
+    delay_curve::Figure
+    diffusion_curve::Figure
     reaction_curve::Figure
     pde_plot::Figure
     pde_error::Vector{Float64}
@@ -351,11 +351,11 @@ Summarise the bootstrapping results.
 # Output 
 - `results::AllResults`: Structure containing the results. See [`AllResults`](@ref).
 """
-function AllResults(x_pde, t_pde, u_pde, bgp; 
-    delay_scales = nothing, diffusion_scales = nothing, reaction_scales = nothing, 
-    x_scale = 1.0, t_scale = 1.0,
-    correct = true)
-    pde_solns = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType = "gp")
+function AllResults(x_pde, t_pde, u_pde, bgp;
+    delay_scales=nothing, diffusion_scales=nothing, reaction_scales=nothing,
+    x_scale=1.0, t_scale=1.0,
+    correct=true)
+    pde_solns = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType="gp")
     _, _, _, _, _, _, delayCIs, diffusionCIs, reactionCIs = density_values(bgp; delay_scales, diffusion_scales, reaction_scales)
     delayd, diffusiond, reactiond = density_results(bgp; delay_scales, diffusion_scales, reaction_scales)
     delayc, diffusionc, reactionc = curve_results(bgp; x_scale, t_scale)
@@ -371,14 +371,14 @@ end
 
     Summarise the bootstrapping results for multiple models. See [`BGPResults`](@ref).
 """
-function AllResults(x_pde, t_pde, u_pde, bgp...; 
-    delay_scales::AbstractVector, diffusion_scales::AbstractVector, reaction_scales::AbstractVector, 
-    x_scale = 1.0, t_scale = 1.0,
-    correct = true)
+function AllResults(x_pde, t_pde, u_pde, bgp...;
+    delay_scales::AbstractVector, diffusion_scales::AbstractVector, reaction_scales::AbstractVector,
+    x_scale=1.0, t_scale=1.0,
+    correct=true)
     results = Vector{AllResults}(undef, length(bgp))
     for i in 1:length(bgp)
-        results[i] = AllResults(x_pde, t_pde, u_pde, bgp[i]; 
-            delay_scales = delay_scales[i], diffusion_scales = diffusion_scales[i], reaction_scales = reaction_scales[i], x_scale, t_scale, correct)
-    end 
+        results[i] = AllResults(x_pde, t_pde, u_pde, bgp[i];
+            delay_scales=delay_scales[i], diffusion_scales=diffusion_scales[i], reaction_scales=reaction_scales[i], x_scale, t_scale, correct)
+    end
     return results
 end
