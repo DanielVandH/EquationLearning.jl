@@ -58,3 +58,52 @@ This section contains the actual code that gives the figures in the paper. There
 - `plot_pde_soln`: For the six datasets, this function plots all of the PDE solutions from each dataset on the same figure.
 
 After these functions are defined, we define parameters that scale each parameter for each function such that the scaled parameters that we have to estimate are all $\mathcal O(1)$. We based these parameter scales on the results from [Jin et al. (2016)](https://doi.org/10.1016/j.jtbi.2015.10.040) and [Lagergren et al. (2020)](https://doi.org/10.1371/journal.pcbi.1008462), or adjusted further based on issues we observed when fitting models. We then fit all the models, which takes a reasonably long time to complete. We then make all the plots.
+
+## Simulation studies
+
+We also present several simulation studies in the paper, all of which are given in [VandenHeuvel2022_PaperCode/simulation_studies.jl](https://github.com/DanielVandH/EquationLearning.jl/blob/5466b87ae7ed3d3d171123ddf3d595d881538490/VandenHeuvel2022_PaperCode/simulation_studies.jl).
+
+### Simulation study I: Fisher-Kolmogorov Model, 10,000 cells per well
+
+In this study we fit some models to data simulated from the Fisher-Kolmogorov model
+
+```math 
+\frac{\partial u}{\partial t} = \beta_1\frac{\partial^2u}{\partial x^2} + \gamma_1u\left(1-\frac{u}{K}\right).
+```
+
+Running all this code will produce the figures in the corresponding section of our paper.
+
+### Simulation study I: Fisher-Kolmogorov Model, 10,000 cells per well
+
+In this study we fit some models to data simulated from the Fisher-Kolmogorov model
+
+```math 
+\frac{\partial u}{\partial t} = \beta_1\frac{\partial^2u}{\partial x^2} + \gamma_1u\left(1-\frac{u}{K}\right).
+```
+
+Running all this code will produce the figures in the corresponding section of our paper.
+
+### Simulation study II: Fisher-Kolmogorov Model with delay, 10,000 cells per well
+
+In this study we fit some models to data simulated from the delayed Fisher-Kolmogorov model
+
+```math 
+\frac{\partial u}{\partial t} = \frac{1}{1+\exp(-\alpha_1-\alpha_2t)}\left[\beta_1\frac{\partial^2u}{\partial x^2} + \gamma_1u\left(1-\frac{u}{K}\right)\right].
+```
+
+Running all this code will produce the figures in the corresponding section of our paper.
+
+### Simulation study III: Fisher Kolmogorov model, 10,000 cells per well, basis function approach 
+
+This study fits the same model as in study I, but using the basis function approach. Running all this code will produce the figures in the corresponding section of our paper.
+
+### Simulation study IV: Data thresholding on the Fisher-Kolmogorov model of Study I 
+
+This study considers the effects of data thresholding on the model in the first study. This study is done by simply looping over many tolerance values. Running all this code will produce the figures in the corresponding section of our paper.
+
+### Simulation study V: Data thresholding on the Fisher-Kolmogorov model of Study II
+
+This study considers the effects of data thresholding on the model in the second study. This study is done by simply looping over many tolerance values. Running all this code will produce the figures in the corresponding section of our paper.
+
+
+
