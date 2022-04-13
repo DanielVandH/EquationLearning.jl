@@ -4,8 +4,10 @@ using EquationLearning
 push!(LOAD_PATH,"../src/")
 makedocs(sitename="EquationLearning.jl Documentation",
          pages = [
-            "Index" => "index.md",
-            "An other page" => "anotherPage.md",
+            "Home" => "home.md",
+            "VandenHeuvel et al. (2022)" => "paper.md",
+            "Tutorial" => "tut.md",
+            "References" => "ref.md"
          ],
          format = Documenter.HTML(prettyurls = false)
 )
