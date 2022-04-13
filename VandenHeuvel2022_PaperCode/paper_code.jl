@@ -197,7 +197,7 @@ assaydata = deepcopy(assay_data)
 for j = 1:6
     rename!(assay_data[j], names(assay_data[j])[1] => :Column)
     assay_data[j] = assay_data[j][assay_data[j][:, :Column].!=1.0, :]
-end
+end 
 
 #####################################################################
 ## Model fits
