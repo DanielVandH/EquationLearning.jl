@@ -82,5 +82,5 @@ function Base.show(io::IO, ::MIME"text/plain", results::Vector{AllResults})
     end
     # Setup table 
     table_data = hcat(row_names, model_res)
-    pretty_table(table_data, header; formatters = (v, i, j) -> (v isa Union{Float64, Vector{Float64}}) ? round.(v, digits = 3) : v)
+    pretty_table(table_data, header; formatters=(v, i, j) -> (v isa Union{Float64,Vector{Float64}}) ? round.(v, digits=3) : v)
 end

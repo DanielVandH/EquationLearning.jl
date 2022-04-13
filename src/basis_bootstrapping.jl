@@ -80,8 +80,8 @@ function basis_bootstrap_helper(x, t, bootₓ, bootₜ, d, r, B)
     # Compute the grid
     nₓ = length(bootₓ)
     nₜ = length(bootₜ)
-    x̃ = repeat(bootₓ, outer = nₜ)
-    t̃ = repeat(bootₜ, inner = nₓ)
+    x̃ = repeat(bootₓ, outer=nₜ)
+    t̃ = repeat(bootₜ, inner=nₓ)
 
     # Scale the vectors 
     @. x̃ = (x̃ - x_min) / x_rng
@@ -155,7 +155,7 @@ function basis_learn_equations!(f, fₜ, fₓ, fₓₓ, D, D′, R,
     db, rb, d, r, A,
     D_params, R_params, inIdx)
     @inbounds @views for j = 1:d # Use @inbounds to tell Julia that all calls to getindex are in the array's size. Use @muladd to help detect whether fused multiply-add is OK. Use @. to distribute broadcasts easily. Use @views to convert all array calls into view calls.
-        A[:, j] .= D′[j].(f, Ref(D_params)) .* (fₓ.^2) .+ D[j].(f, Ref(D_params)) .* fₓₓ
+        A[:, j] .= D′[j].(f, Ref(D_params)) .* (fₓ .^ 2) .+ D[j].(f, Ref(D_params)) .* fₓₓ
     end
     @inbounds @views for j = 1:r
         A[:, d+j] .= R[j].(f, Ref(R_params))
@@ -200,10 +200,10 @@ Perform bootstrapping on the data `(x, t, u)` to learn the appropriate functiona
 """
 function basis_bootstrap_gp(x::T1, t::T1, u::T1,
     D::Vector{Function}, D′::Vector{Function}, R::Vector{Function}, R′::Vector{Function};
-    gp_setup::GP_Setup = GP_Setup(u),
-    bootstrap_setup::Bootstrap_Setup = Bootstrap_Setup(x, t, u),
-    pde_setup::PDE_Setup = PDE_Setup(x),
-    D_params = nothing, R_params = nothing, PDEkwargs...) where {T1<:AbstractVector}
+    gp_setup::GP_Setup=GP_Setup(u),
+    bootstrap_setup::Bootstrap_Setup=Bootstrap_Setup(x, t, u),
+    pde_setup::PDE_Setup=PDE_Setup(x),
+    D_params=nothing, R_params=nothing, PDEkwargs...) where {T1<:AbstractVector}
     ## Check provided functions and ODE algorithm are correct
     #@assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
     d = length(D)
@@ -232,7 +232,7 @@ function basis_bootstrap_gp(x::T1, t::T1, u::T1,
 
     ## Compute the mean vector and Cholesky factor for the joint Gaussian process of the function and its derivatives 
     if ismissing(gp_setup.μ) || ismissing(gp_setup.L)
-        μ, L = compute_joint_GP(gp, Xₛ; nugget = gp_setup.nugget)
+        μ, L = compute_joint_GP(gp, Xₛ; nugget=gp_setup.nugget)
     else
         μ, L = gp_setup.μ, gp_setup.L
     end
@@ -346,7 +346,7 @@ ensuring that the delay and diffusion values are strictly nonnegative, and the a
 """
 function compute_valid_pde_indices(bgp::BasisBootResults, u_pde, num_u, B, dr, rr, nodes, weights, D_params, R_params)
     idx = Array{Int64}(undef, 0)
-    u_vals = range(minimum(bgp.gp.y), maximum(bgp.gp.y), length = num_u)
+    u_vals = range(minimum(bgp.gp.y), maximum(bgp.gp.y), length=num_u)
     Duv = zeros(num_u, 1)
     max_u = maximum(u_pde)
     A₁ = zeros(num_u, length(bgp.D))
@@ -393,7 +393,7 @@ The `_pde` subscript is used to indicate that these data need not be the same as
 For example, we may have 3 replicates of some data which we would easily use in [`bootstrap_gp`](@ref), but for the PDE we would need to average these 
 together for obtaining the solutions.
 """
-function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples = 1.0, ICType = "data")
+function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples=1.0, ICType="data")
     #@assert 0 < prop_samples ≤ 1.0 "The values of prop_samples must be in (0, 1]."
     #@assert ICType ∈ ["data", "gp"]
     nodes, weights = gausslegendre(5)
@@ -434,8 +434,8 @@ function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples
         p = (N, V, Δx, bgp.pde_setup.LHS..., bgp.pde_setup.RHS..., Du, Ru, D′u, R′u, bgp.D, bgp.R, bgp.D′, bgp.R′, dr[:, coeff], rr[:, coeff], bgp.D_params, bgp.R_params, A₁, A₂)
         prob = ODEProblem(basis_sysdegeneral!, initialCondition, tspan, p)
         #try
-            solns_all[:, pdeidx, :] .= hcat(DifferentialEquations.solve(prob, bgp.pde_setup.alg, saveat = bgp.pde_setup.δt).u...)
-            print("Solving PDEs: Step $pdeidx of $rand_pde.\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
+        solns_all[:, pdeidx, :] .= hcat(DifferentialEquations.solve(prob, bgp.pde_setup.alg, saveat=bgp.pde_setup.δt).u...)
+        print("Solving PDEs: Step $pdeidx of $rand_pde.\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
         #catch
         #end
     end
@@ -467,7 +467,7 @@ Computes the densities for the bootstrapping results in `bgp` from a basis funct
 - `diffusionCIs`: Confidence intervals for the diffusion parameters. 
 - `reactionCIS`: Confidence intervals for the reaction parameters.
 """
-function density_values(bgp::BasisBootResults; level = 0.05, diffusion_scales = nothing, reaction_scales = nothing)
+function density_values(bgp::BasisBootResults; level=0.05, diffusion_scales=nothing, reaction_scales=nothing)
     # Work on diffusion 
     quantiles = [level / 2 1 - level / 2]
     dr = copy(bgp.diffusionBases)
@@ -521,38 +521,38 @@ Plots the densities for the bootstrapping results in `bgp` with the basis functi
 - `diffusionDensityFigure`: A figure of plots containing a density plot for each diffusion parameter.
 - `reactionDensityFigure`: A figure of plots containing a density plot for each reaction parameter.
 """
-function density_results(bgp::BasisBootResults; level = 0.05, fontsize = 23, diffusion_scales = nothing, reaction_scales = nothing,
-    diffusion_resolution = (800, 800), reaction_resolution = (800, 800))
+function density_results(bgp::BasisBootResults; level=0.05, fontsize=23, diffusion_scales=nothing, reaction_scales=nothing,
+    diffusion_resolution=(800, 800), reaction_resolution=(800, 800))
 
     # Compute densities 
-    dr, rr, d, r, diffusionCIs, reactionCIs = density_values(bgp; level = level, diffusion_scales = diffusion_scales, reaction_scales = reaction_scales)
+    dr, rr, d, r, diffusionCIs, reactionCIs = density_values(bgp; level=level, diffusion_scales=diffusion_scales, reaction_scales=reaction_scales)
     # Pre-allocate the plots 
     diffusionDensityAxes = Vector{Axis}(undef, d)
     reactionDensityAxes = Vector{Axis}(undef, r)
     alphabet = join('a':'z') # For labelling the figures
 
     # Plot the diffusion coefficient densities 
-    diffusionDensityFigure = Figure(fontsize = fontsize, resolution = diffusion_resolution)
+    diffusionDensityFigure = Figure(fontsize=fontsize, resolution=diffusion_resolution)
     for i = 1:d
-        diffusionDensityAxes[i] = Axis(diffusionDensityFigure[1, i], xlabel = L"\beta_%$i", ylabel = "Probability density",
-            title = @sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i], diffusionCIs[i, 1], diffusionCIs[i, 2]),
-            titlealign = :left)
+        diffusionDensityAxes[i] = Axis(diffusionDensityFigure[1, i], xlabel=L"\beta_%$i", ylabel="Probability density",
+            title=@sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i], diffusionCIs[i, 1], diffusionCIs[i, 2]),
+            titlealign=:left)
         densdat = KernelDensity.kde(dr[i, :])
-        lines!(diffusionDensityAxes[i], densdat.x, densdat.density, color = :blue, linewidth = 3)
+        lines!(diffusionDensityAxes[i], densdat.x, densdat.density, color=:blue, linewidth=3)
         CI_range = diffusionCIs[i, 1] .< densdat.x .< diffusionCIs[i, 2]
-        band!(diffusionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+        band!(diffusionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color=(:blue, 0.35))
     end
 
     # Plot the reaction coefficient densities
-    reactionDensityFigure = Figure(fontsize = fontsize, resolution = reaction_resolution)
+    reactionDensityFigure = Figure(fontsize=fontsize, resolution=reaction_resolution)
     for i = 1:r
-        reactionDensityAxes[i] = Axis(reactionDensityFigure[1, i], xlabel = L"\gamma_%$i", ylabel = "Probability density",
-            title = @sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i], reactionCIs[i, 1], reactionCIs[i, 2]),
-            titlealign = :left)
+        reactionDensityAxes[i] = Axis(reactionDensityFigure[1, i], xlabel=L"\gamma_%$i", ylabel="Probability density",
+            title=@sprintf("(%s): 95%% CI: (%.3g, %.3g)", alphabet[i], reactionCIs[i, 1], reactionCIs[i, 2]),
+            titlealign=:left)
         densdat = kde(rr[i, :])
-        lines!(reactionDensityAxes[i], densdat.x, densdat.density, color = :blue, linewidth = 3)
+        lines!(reactionDensityAxes[i], densdat.x, densdat.density, color=:blue, linewidth=3)
         CI_range = reactionCIs[i, 1] .< densdat.x .< reactionCIs[i, 2]
-        band!(reactionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color = (:blue, 0.35))
+        band!(reactionDensityAxes[i], densdat.x[CI_range], densdat.density[CI_range], zeros(count(CI_range)), color=(:blue, 0.35))
     end
 
     # Return
@@ -578,13 +578,13 @@ Computes values for plotting the learned functional forms along with confidence 
 - `u_vals`: The density values used for computing the functions. 
 - `t_vals`: The time values used for computing the functions.
 """
-function curve_values(bgp::BasisBootResults; level = 0.05, x_scale = 1.0, t_scale = 1.0)
+function curve_values(bgp::BasisBootResults; level=0.05, x_scale=1.0, t_scale=1.0)
     # Setup parameters and grid for evaluation
     dr = bgp.diffusionBases
     rr = bgp.reactionBases
     B = size(dr, 2)
     num_u = 500
-    u_vals = collect(range(minimum(bgp.gp.y), maximum(bgp.gp.y), length = num_u))
+    u_vals = collect(range(minimum(bgp.gp.y), maximum(bgp.gp.y), length=num_u))
 
     # Evaluate curves 
     Du = zeros(num_u, B)
@@ -595,8 +595,8 @@ function curve_values(bgp::BasisBootResults; level = 0.05, x_scale = 1.0, t_scal
     end
 
     # Find lower/upper values for confidence intervals, along with mean curves
-    Du_vals = compute_ribbon_features(Du; level = level)
-    Ru_vals = compute_ribbon_features(Ru; level = level)
+    Du_vals = compute_ribbon_features(Du; level=level)
+    Ru_vals = compute_ribbon_features(Ru; level=level)
 
     # Return 
     return Du_vals, Ru_vals, u_vals
@@ -620,21 +620,21 @@ Plots the learned functional forms along with confidence intervals for the boots
 - `diffusionCurvePlots`: A plot containing the learned functional form for the diffusion function, along with an uncertainty ribbon.
 - `reactionCurvePlots`: A plot containing the learned functional form for the reaction function, along with an uncertainty ribbon.
 """
-function curve_results(bgp::BasisBootResults; level = 0.05, fontsize = 23, x_scale = 1.0, t_scale = 1.0)
+function curve_results(bgp::BasisBootResults; level=0.05, fontsize=23, x_scale=1.0, t_scale=1.0)
     # Compute values 
-    Du_vals, Ru_vals, u_vals = curve_values(bgp; level = level, x_scale = x_scale, t_scale = t_scale)
+    Du_vals, Ru_vals, u_vals = curve_values(bgp; level=level, x_scale=x_scale, t_scale=t_scale)
 
     # Plot the diffusion curves 
-    diffusionCurvePlots = Figure(fontsize = fontsize)
-    ax = Axis(diffusionCurvePlots[1, 1], xlabel = L"u", ylabel = L"D(u)", linewidth = 1.3, linecolor = :blue)
+    diffusionCurvePlots = Figure(fontsize=fontsize)
+    ax = Axis(diffusionCurvePlots[1, 1], xlabel=L"u", ylabel=L"D(u)", linewidth=1.3, linecolor=:blue)
     lines!(ax, u_vals / x_scale^2, Du_vals[1])
-    band!(ax, u_vals / x_scale^2, Du_vals[3], Du_vals[2], color = (:blue, 0.35))
+    band!(ax, u_vals / x_scale^2, Du_vals[3], Du_vals[2], color=(:blue, 0.35))
 
     # Plot the reaction curves 
-    reactionCurvePlots = Figure(fontsize = fontsize)
-    ax = Axis(reactionCurvePlots[1, 1], xlabel = L"u", ylabel = L"R(u)", linewidth = 1.3, linecolor = :blue)
+    reactionCurvePlots = Figure(fontsize=fontsize)
+    ax = Axis(reactionCurvePlots[1, 1], xlabel=L"u", ylabel=L"R(u)", linewidth=1.3, linecolor=:blue)
     lines!(ax, u_vals / x_scale^2, Ru_vals[1])
-    band!(ax, u_vals / x_scale^2, Ru_vals[3], Ru_vals[2], color = (:blue, 0.35))
+    band!(ax, u_vals / x_scale^2, Ru_vals[3], Ru_vals[2], color=(:blue, 0.35))
 
     # Return 
     return diffusionCurvePlots, reactionCurvePlots

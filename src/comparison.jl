@@ -5,7 +5,7 @@ Computes all the AIC values for the results in `bgp`. A small-sample size correc
 if `correct = true`. The formulas used are given in Eq. 6 (uncorrected) or Eq. 17 (corrected) of
 Banks and Joyner (2017) [https://doi.org/10.1016/j.aml.2017.05.005].
 """
-function AIC(bgp::Union{BootResults,BasisBootResults}, x, t, u; correct = true, pde_solns = nothing)
+function AIC(bgp::Union{BootResults,BasisBootResults}, x, t, u; correct=true, pde_solns=nothing)
     ## Number of model parameters and bootstrap iterations
     tt = size(bgp.delayBases, 1)
     d = size(bgp.diffusionBases, 1)
@@ -14,7 +14,7 @@ function AIC(bgp::Union{BootResults,BasisBootResults}, x, t, u; correct = true, 
     B = bgp.bootstrap_setup.B
     ## Do we need to re-compute the PDE solutions?
     if isnothing(pde_solns)
-        pde_solns = boot_pde_solve(bgp, x, t, u; ICType = "gp")
+        pde_solns = boot_pde_solve(bgp, x, t, u; ICType="gp")
     end
     ## Now compute all the sum of squared errors for each bootstrap iterate 
     time_values = Array{Bool}(undef, length(t), length(bgp.pde_setup.δt))
@@ -104,7 +104,7 @@ end
 
 Compare several bootstrapped models using AIC.
 """
-function compare_AICs(x, t, u, models::Union{BootResults,BasisBootResults}...; correct = true)
-    AICs = [AIC(bgp, x, t, u; correct = correct) for bgp in models]
+function compare_AICs(x, t, u, models::Union{BootResults,BasisBootResults}...; correct=true)
+    AICs = [AIC(bgp, x, t, u; correct=correct) for bgp in models]
     return compare_AICs(AICs...)
 end

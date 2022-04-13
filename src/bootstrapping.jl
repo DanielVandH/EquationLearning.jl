@@ -47,8 +47,8 @@ function bootstrap_grid(x, t, bootₓ, bootₜ)
     # Compute the grid
     nₓ = length(bootₓ)
     nₜ = length(bootₜ)
-    x̃ = repeat(bootₓ, outer = nₜ)
-    t̃ = repeat(bootₜ, inner = nₓ)
+    x̃ = repeat(bootₓ, outer=nₜ)
+    t̃ = repeat(bootₜ, inner=nₓ)
     unscaled_t̃ = copy(t̃)
 
     # Scale the vectors 
@@ -181,7 +181,7 @@ function preallocate_eqlearn(num_restarts, meshPoints, δt, finalTime, Xₛ, tt,
         plan, _ = LHCoptim(num_restarts, tt + d + r, 1000) # Construct the initial design
         stacked_params = Matrix(scaleLHC(plan, [(lowers[i] + 1e-5, uppers[i] - 1e-5) for i in 1:(tt+d+r)])') # Scale into the correct domain. Note that we shift values by 1e-5 so that the points don't lie on the boundary
     else
-        stacked_params = mean(hcat(lowers, uppers); dims = 2) # Use average of lower/upper bounds for parameters when no restarts are required
+        stacked_params = mean(hcat(lowers, uppers); dims=2) # Use average of lower/upper bounds for parameters when no restarts are required
     end
 
     # PDE
@@ -374,11 +374,11 @@ Perform bootstrapping on the data `(x, t, u)` to learn the appropriate functiona
 function bootstrap_gp(x::T1, t::T1, u::T1,
     T::Function, D::Function, D′::Function, R::Function, R′::Function,
     α₀::T1, β₀::T1, γ₀::T1, lowers::T1, uppers::T1;
-    gp_setup::GP_Setup = GP_Setup(u),
-    bootstrap_setup::Bootstrap_Setup = Bootstrap_Setup(x, t, u),
-    optim_setup::Optim.Options = Optim.Options(),
-    pde_setup::PDE_Setup = PDE_Setup(x),
-    D_params = nothing, R_params = nothing, T_params = nothing, zvals = nothing, PDEkwargs...) where {T1<:AbstractVector}
+    gp_setup::GP_Setup=GP_Setup(u),
+    bootstrap_setup::Bootstrap_Setup=Bootstrap_Setup(x, t, u),
+    optim_setup::Optim.Options=Optim.Options(),
+    pde_setup::PDE_Setup=PDE_Setup(x),
+    D_params=nothing, R_params=nothing, T_params=nothing, zvals=nothing, PDEkwargs...) where {T1<:AbstractVector}
     ## Check provided functions and ODE algorithm are correct
     #@assert !(typeof(pde_setup.alg) <: Sundials.SundialsODEAlgorithm) "Automatic differentiation is not compatible with Sundials solvers."
     #@assert length(x) == length(t) == length(u) "The lengths of the provided data vectors must all be equal."
@@ -450,7 +450,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
 
     ## Compute the mean vector and Cholesky factor for the joint Gaussian process of the function and its derivatives 
     if ismissing(gp_setup.μ) || ismissing(gp_setup.L)
-        μ, L = compute_joint_GP(gp, Xₛ; nugget = gp_setup.nugget)
+        μ, L = compute_joint_GP(gp, Xₛ; nugget=gp_setup.nugget)
     else
         μ, L = gp_setup.μ, gp_setup.L
     end
@@ -478,7 +478,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
 
         # Compute the initial condition for the PDE
         @views IC1 .= max.(f[Xₛ₀], 0.0)
-        initialCondition .= Dierckx.Spline1D(bootstrap_setup.bootₓ, IC1; k = 1)(pde_setup.meshPoints)
+        initialCondition .= Dierckx.Spline1D(bootstrap_setup.bootₓ, IC1; k=1)(pde_setup.meshPoints)
 
         # Preallocate error vector 
         errs = DiffEqBase.dualcache(zeros(length(inIdx)), trunc(Int64, length(inIdx) / 10)) # We use dualcache since we want to use this within an automatic differentiation computation. 
@@ -511,7 +511,7 @@ function bootstrap_gp(x::T1, t::T1, u::T1,
         if !flag
             j += 1
             print("Bootstrapping: Step $j of $(bootstrap_setup.B). Previous objective value: $(minimum(obj_values)).\u001b[1000D")
-        else 
+        else
             throw("Error occurred.")
         end
     end
