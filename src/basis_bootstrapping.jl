@@ -22,7 +22,7 @@ The function uses `@inline` to suggest that the compiler could inline this in th
     end
     mul!(val, A, coefficients)
     return nothing
-end
+end 
 
 """
     basis_bootstrap_helper(x, t, bootₓ, bootₜ, d, r, B)

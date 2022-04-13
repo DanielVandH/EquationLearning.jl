@@ -8,7 +8,7 @@ tseststestst
 ## Functions 
 
 ```@docs 
-fit_GP
+fit_gp
 ```
 
 ## Index
