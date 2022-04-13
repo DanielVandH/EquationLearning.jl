@@ -1,6 +1,6 @@
 # Manual
 
-This section lists some of the docstrings for the functions defined from our module. All functions in this package are documented, though we only the important ones that are likely to be used by a user here. All of the docstrings in this package are listed in the index section.
+This section lists some of the docstrings for the functions defined from our module. All functions in this package are documented, though we only the important ones that are likely to be used by a user here. The remaining docstrings in this package are listed in the index section.
 
 ## Structs 
 ```@docs 

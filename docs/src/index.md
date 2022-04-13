@@ -1,6 +1,6 @@
 # Index 
 
-All the docstrings in this package are listed below. We separate the docstirngs by file.
+All the docstrings in this package are listed below. We separate the docstrings by file.
 
 ## basis_bootstrapping.jl
 
@@ -21,13 +21,6 @@ Pages = ["bootstrapping.jl"]
 ```@autodocs
 Modules = [EquationLearning]
 Pages = ["comparison.jl"]
-```
-
-## display.jl
-
-```@autodocs
-Modules = [EquationLearning, Base]
-Pages = ["display.jl"]
 ```
 
 ## gps.jl
@@ -56,13 +49,6 @@ Pages = ["pdes.jl"]
 ```@autodocs
 Modules = [EquationLearning]
 Pages = ["plot_results.jl"]
-```
-
-## structs.jl
-
-```@autodocs
-Modules = [EquationLearning]
-Pages = ["structs.jl"]
 ```
 
 ## synthetic_data.jl

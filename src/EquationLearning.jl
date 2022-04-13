@@ -49,6 +49,9 @@ include("display.jl")            # Displaying results
 ## Export functions
 #####################################################################
 
+## Structs  
+export GP_Setup, Bootstrap_Setup, PDE_Setup, BootResults, BasisBootResults, AllResults
+
 ## Bootstrapping  
 export bootstrap_gp, basis_bootstrap_gp, update_results
 
@@ -63,9 +66,6 @@ export boot_pde_solve, error_comp
 
 ## Plotting 
 export density_values, density_results, curve_values, curve_results, pde_values, pde_results, delay_product
-
-## Structs  
-export GP_Setup, Bootstrap_Setup, PDE_Setup, BootResults, BasisBootResults, AllResults
 
 ## Synthetic Data  
 export generate_data
