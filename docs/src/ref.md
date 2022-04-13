@@ -1,8 +1,5 @@
 # Manual
 
-```@contents
-```
-
 This section lists some of the docstrings for the functions defined from our module. All functions in this package are documented, though we only list some here.
 
 ## Structs 

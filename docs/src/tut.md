@@ -1,8 +1,5 @@
 # Tutorial
 
-```@contents
-```
-
 Here we describe how the methods in this package can be used. We illustrate this on the 12,000 cells per well dataset from [Jin et al. (2016)](https://doi.org/10.1016/j.jtbi.2015.10.040). We only show how we could fit a delayed Fisher-Kolmogorov model. Instructions for fitting, for example, a model with the basis function approach can be found by looking at the corresponding code from our paper as described [here](https://danielvandh.github.io/EquationLearning.jl/dev/paper.html). We start with the following:
 
 ```julia 
