@@ -49,7 +49,7 @@ include("display.jl")            # Displaying results
 ## Export functions
 #####################################################################
 
-## Bootstrapping 
+## Bootstrapping  
 export bootstrap_gp, basis_bootstrap_gp, update_results
 
 ## Comparison 
@@ -69,6 +69,5 @@ export GP_Setup, Bootstrap_Setup, PDE_Setup, BootResults, BasisBootResults, AllR
 
 ## Synthetic Data  
 export generate_data
-
 
 end
