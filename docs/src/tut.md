@@ -194,7 +194,7 @@ See the manual for more details.
 Now we want to define the functions and the corresponding parameter scales. Remember that the model we want to fit takes the form
 
 ```math 
-\frac{\partial u}{\partial t} = T(t; \boldsymbol{\alpha})\left[\left(D(u; \boldsymbol{\beta})\frac{\partial u}{\partial x}\right) + R(u; \boldsymbol{\gamma})\right],
+\frac{\partial u}{\partial t} = T(t; \boldsymbol{\alpha})\left[\frac{\partial}{\partial x}\left(D(u; \boldsymbol{\beta})\frac{\partial u}{\partial x}\right) + R(u; \boldsymbol{\gamma})\right],
 ```
 
 where 
