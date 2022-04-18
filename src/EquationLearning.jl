@@ -22,6 +22,7 @@ using Printf
 using StatsBase
 using Random
 using Setfield
+using Distributions
 using KernelDensity
 using Sundials
 using StaticArrays

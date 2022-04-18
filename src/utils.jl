@@ -73,7 +73,7 @@ in `inIdx` give the indices in `f` (and `fₜ`) that should be kept.
 The threshold conditions are:
 
     1. `min(|f|)τ₁ ≤ |f| ≤ max(|f|)(1-τ₁)`.
-    2. `min(|fₜ|)τ₂ ≤ |fₜ| ≤ max(|fₜ|)(1-τ₂2)`.
+    2. `min(|fₜ|)τ₂ ≤ |fₜ| ≤ max(|fₜ|)(1-τ₂)`.
     3. `f ≥ 0.0`.
 """
 function data_thresholder(f, fₜ, τ)
