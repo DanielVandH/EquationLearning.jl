@@ -194,16 +194,16 @@ See the manual for more details.
 Now we want to define the functions and the corresponding parameter scales. Remember that the model we want to fit takes the form
 
 ```math 
-\frac{\partial u}{\partial t} = T(t; \mathbf{\alpha})\left[\left(D(u; \mathbf{\beta})\frac{\partial u}{\partial x}\right) + R(u; \mathbf{\gamma})\right],
+\frac{\partial u}{\partial t} = T(t; \boldsymbol{\alpha})\left[\frac{\partial}{\partial x}\left(D(u; \boldsymbol{\beta})\frac{\partial u}{\partial x}\right) + R(u; \boldsymbol{\gamma})\right],
 ```
 
 where 
 
 ```math 
-T(t; \mathbf{\alpha}) = \frac{1}{1+\exp(-\alpha_1-\alpha_2t)}, \quad D(u; \mathbf{\alpha}) = \beta_1, \quad R(u; \mathbf{\gamma}) = \gamma_1u\left(1-\frac{u}{K}\right).
+T(t; \boldsymbol{\alpha}) = \frac{1}{1+\exp(-\alpha_1-\alpha_2t)}, \quad D(u; \boldsymbol{\alpha}) = \beta_1, \quad R(u; \boldsymbol{\gamma}) = \gamma_1u\left(1-\frac{u}{K}\right).
 ```
 
-The function `bootstrap_gp` assumes that $T$, $D$, and $R$ are given as functions of $(t, \mathbf{\alpha}, \mathbf{p})$, $(u, \mathbf{\beta}, \mathbf{p})$, and $(u, \mathbf{\gamma}, \mathbf{p})$, respectively. This vector $\mathbf{p}$ gives a vector of known parameters for each of the functions, and is used to allow for type stability in the functions. In particular, it would be wrong to define the reaction function as
+The function `bootstrap_gp` assumes that $T$, $D$, and $R$ are given as functions of $(t, \boldsymbol{\alpha}, \boldsymbol{p})$, $(u, \boldsymbol{\beta}, \boldsymbol{p})$, and $(u, \boldsymbol{\gamma}, \boldsymbol{p})$, respectively. This vector $\boldsymbol{p}$ gives a vector of known parameters for each of the functions, and is used to allow for type stability in the functions. In particular, it would be wrong to define the reaction function as
 
 ```julia
 R = (u, γ, p) -> γ[1] * u * (1.0 - u / K)
@@ -219,7 +219,7 @@ D′ = (u, β, p) -> 0.0
 R′ = (u, γ, p) -> γ[1] * p[2] - 2.0 * γ[1] * p[2] * u / p[1]
 ```
 
-The derivative for the reaction term is not currently used, but in the future it may be used and we thus include it as a necessary term in `bootstrap_gp`, hence its presence here. In these functions we give each parameter a corresponding value in the vector $\mathbf{p}$, which we can use to put the parameters on the same scale. To now think about defining $\mathbf{p}$, we could set the parameter scales to be $1$ and fit a small number of models, as described in great detail in the first simulation study of our paper. We will instead provide a way that should typically good enough (that is only specific to this dataset since there already exist papers that study this data). In Table 1 of [Jin et al. (2016)](https://doi.org/10.1016/j.jtbi.2015.10.040), the values for $\beta_1$ and $\gamma_1$ are given as $250 \pm 140$ and $0.044 \pm 0.002$, respectively, in units of $\mu\textrm{m}^2\textrm{h}^{-1}$ and $\textrm{h}^{-1}$, respectively. The delay term should not, affect these estimates so significantly, although we do not expect to get these exact same parameter values, so we should not scale the parameters with exactly these values. Similarly, although they consider a different form of the model, [Lagergren et al. (2020)](https://doi.org/10.1371/journal.pcbi.1008462) present the same delay model for this dataset, finding $\alpha_1 = -3.3013$ and $\alpha_2 = 0.2293$ ($\textrm{hr}^{-1}$). Based on these estimates, and with some other configuring with these estimates (after running the model for a small number of models to further improve these estimates in a significantly faster time than if we simply started with unit parameter scales), we define the following parameters:
+The derivative for the reaction term is not currently used, but in the future it may be used and we thus include it as a necessary term in `bootstrap_gp`, hence its presence here. In these functions we give each parameter a corresponding value in the vector $\boldsymbol{p}$, which we can use to put the parameters on the same scale. To now think about defining $\boldsymbol{p}$, we could set the parameter scales to be $1$ and fit a small number of models, as described in great detail in the first simulation study of our paper. We will instead provide a way that should typically good enough (that is only specific to this dataset since there already exist papers that study this data). In Table 1 of [Jin et al. (2016)](https://doi.org/10.1016/j.jtbi.2015.10.040), the values for $\beta_1$ and $\gamma_1$ are given as $250 \pm 140$ and $0.044 \pm 0.002$, respectively, in units of $\mu\textrm{m}^2\textrm{h}^{-1}$ and $\textrm{h}^{-1}$, respectively. The delay term should not, affect these estimates so significantly, although we do not expect to get these exact same parameter values, so we should not scale the parameters with exactly these values. Similarly, although they consider a different form of the model, [Lagergren et al. (2020)](https://doi.org/10.1371/journal.pcbi.1008462) present the same delay model for this dataset, finding $\alpha_1 = -3.3013$ and $\alpha_2 = 0.2293$ ($\textrm{hr}^{-1}$). Based on these estimates, and with some other configuring with these estimates (after running the model for a small number of models to further improve these estimates in a significantly faster time than if we simply started with unit parameter scales), we define the following parameters:
 
 ```julia
 T_params = [-1.6, 0.2 * t_scale]
@@ -353,4 +353,4 @@ julia> res.reaction_density
 julia> res.reaction_curve
 ```
 
-These plots may not always be what is desired by the user. Customising these plots based on the `bgp` results may take some work, and ways that we could for example plot all these plots in the same figure (as we do in the paper), are given in the plotting functions in [VandenHeuvel2022_PaperCode/paper_code.jl](https://github.com/DanielVandH/EquationLearning.jl/blob/5466b87ae7ed3d3d171123ddf3d595d881538490/VandenHeuvel2022_PaperCode/paper_code.jl).
+These plots may not always be what is desired by the user. Customising these plots based on the `bgp` results may take some work, and ways that we could for example plot all these plots in the same figure (as we do in the paper), are given in the plotting functions in [VandenHeuvel2022_PaperCode/paper_code.jl](https://github.com/DanielVandH/EquationLearning.jl/blob/5466b87ae7ed3d3d171123ddf3d595d881538490/VandenHeuvel2022_PaperCode/paper_code.jl). How we rescale the data back into the original variables is also illustrated in this code by using the corresponding scale arguments for the plotting functions (also see the manual).
