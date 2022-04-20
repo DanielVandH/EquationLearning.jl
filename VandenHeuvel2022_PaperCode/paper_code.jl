@@ -71,7 +71,7 @@ jin_assay_data_fig = Figure(fontsize=fontsize, resolution=(1800, 1000))
 plot_cart_idx = [(1, 1), (1, 2), (2, 1), (2, 2), (3, 1), (3, 2)]
 for (k, (i, j)) in enumerate(plot_cart_idx)
     data = assay_data[k]
-    assay_plots[i, j] = Axis(jin_assay_data_fig[i, j], xlabel="Position (μm)", ylabel="Cell density\n(cells/μm²)",
+    assay_plots[i, j] = Axis(jin_assay_data_fig[i, j], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)",
         title="($(alphabet[k])): $(10+2*(k-1)),000 cells per well",
         titlealign=:left)
     for (s, T) in enumerate(unique(data.Time))
@@ -84,7 +84,7 @@ for (k, (i, j)) in enumerate(plot_cart_idx)
     ylims!(assay_plots[i, j], 0.0, 0.002)
 end
 
-Legend(jin_assay_data_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:horizontal, labelsize=fontsize, titlesize=fontsize, titleposition=:left)
+Legend(jin_assay_data_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:horizontal, labelsize=fontsize, titlesize=fontsize, titleposition=:left)
 save("figures/jin_assay_data.pdf", jin_assay_data_fig, px_per_unit=2)
 
 #####################################################################
@@ -105,7 +105,7 @@ for (k, (i, j)) in enumerate(plot_cart_idx)
     μ, Σ = predict_f(gp_dat, [EquationLearning.scale_unit(vec(data.Position)'); EquationLearning.scale_unit(vec(data.Time)')])
     lower = μ .- 2sqrt.(Σ)
     upper = μ .+ 2sqrt.(Σ)
-    gp_plots[i, j] = Axis(jin_assay_data_gp_bands_fig[i, j], xlabel="Position (μm)", ylabel="Cell density\n(cells/μm²)",
+    gp_plots[i, j] = Axis(jin_assay_data_gp_bands_fig[i, j], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)",
         title="($(alphabet[k])): $(10+2*(k-1)),000 cells per well",
         titlealign=:left)
     for (s, T) in enumerate(unique(t))
@@ -117,7 +117,7 @@ for (k, (i, j)) in enumerate(plot_cart_idx)
     ylims!(gp_plots[i, j], 0.0, 0.002)
 end
 
-Legend(jin_assay_data_gp_bands_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:horizontal, labelsize=fontsize, titlesize=fontsize, titleposition=:left)
+Legend(jin_assay_data_gp_bands_fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:horizontal, labelsize=fontsize, titlesize=fontsize, titleposition=:left)
 save("figures/jin_assay_data_gp_plots.pdf", jin_assay_data_gp_bands_fig, px_per_unit=2)
 
 #####################################################################
@@ -143,14 +143,13 @@ for (k, (i, j)) in enumerate(plot_cart_idx)
     t̃_rng = EquationLearning.scale_unit(T_rng)
     Xₛ = [vec(x̃_rng)'; vec(t̃_rng)']
     μ, _ = predict_f(gp_dat, Xₛ)
-    spacetime_plots[i, j] = Axis(jin_assay_data_gp_bands_fig_spacetime[i, j], xlabel="Position (μm)", ylabel="Time (h)",
+    spacetime_plots[i, j] = Axis(jin_assay_data_gp_bands_fig_spacetime[i, j], xlabel=L"$x$ (μm)", ylabel=L"$t$ (h)",
         title="($(alphabet[k])): $(10+2*(k-1)),000 cells per well",
         titlealign=:left)
     heatmap!(spacetime_plots[i, j], X_rng * x_scale, T_rng * t_scale, μ / x_scale^2; colorrange=(0.0, 0.002))
 end
 
-cb = Colorbar(jin_assay_data_gp_bands_fig_spacetime[1:3, 3], colorrange=(0, 0.002))
-cb.label = "Cell density (cells/μm²)"
+cb = Colorbar(jin_assay_data_gp_bands_fig_spacetime[1:3, 3], colorrange=(0, 0.002), label = L"$u(x, t)$ (cells/μm^2)")
 save("figures/jin_assay_data_spacetime_plots.pdf", jin_assay_data_gp_bands_fig_spacetime, px_per_unit=2)
 
 #####################################################################
@@ -370,7 +369,7 @@ function plot_fisher_kolmogorov_delay(bgp::BootResults, x_scale, t_scale, filena
     delayAxis = Axis(resultFigures[1, 3], xlabel=L"$t$ (h)", ylabel=L"$T(t)$", title="(c): Delay curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
     lines!(delayAxis, t_vals * t_scale, Tu_vals[1])
     band!(delayAxis, t_vals * t_scale, Tu_vals[3], Tu_vals[2], color=(:blue, 0.35))
-    diffusionAxis = Axis(resultFigures[2, 3], xlabel=L"$u$ (cells/μm²)", ylabel=L"$T(t)D(u)$ (μm²/h)", title="(f): Diffusion curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
+    diffusionAxis = Axis(resultFigures[2, 3], xlabel=L"$u$ (cells/μm²)", ylabel=L"$T(t)D(u)$ (μm²/h)", title="(f): Nonlinear diffusivity curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
     Du_vals0 = delay_product(bgp, 0.0; type="diffusion", x_scale=x_scale, t_scale=t_scale)
     Du_vals12 = delay_product(bgp, 12.0 / t_scale; type="diffusion", x_scale=x_scale, t_scale=t_scale)
     Du_vals24 = delay_product(bgp, 24.0 / t_scale; type="diffusion", x_scale=x_scale, t_scale=t_scale)
@@ -420,7 +419,7 @@ function plot_fisher_kolmogorov_delay(bgp::BootResults, x_scale, t_scale, filena
         band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
         CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
     end
-    Legend(resultFigures[1, 4], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
+    Legend(resultFigures[1, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
     save("figures/$filename", resultFigures, px_per_unit=2)
     return resultFigures
 end
@@ -473,7 +472,7 @@ function plot_generalised_fkpp_delay(bgp::BootResults, x_scale, t_scale, filenam
     delayAxis = Axis(resultFigures[4, 1], xlabel=L"$t$ (h)", ylabel=L"$T(t)$", title="(g): Delay curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
     lines!(delayAxis, t_vals * t_scale, Tu_vals[1])
     band!(delayAxis, t_vals * t_scale, Tu_vals[3], Tu_vals[2], color=(:blue, 0.35))
-    diffusionAxis = Axis(resultFigures[4, 2], xlabel=L"$u$ (cells/μm²)", ylabel=L"$T(t)D(u)$ (μm²/h)", title="(h): Diffusion curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
+    diffusionAxis = Axis(resultFigures[4, 2], xlabel=L"$u$ (cells/μm²)", ylabel=L"$T(t)D(u)$ (μm²/h)", title="(h): Nonlinear diffusivity curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
     Du_vals0 = delay_product(bgp, 0.0; type="diffusion", x_scale=x_scale, t_scale=t_scale)
     Du_vals12 = delay_product(bgp, 12.0 / t_scale; type="diffusion", x_scale=x_scale, t_scale=t_scale)
     Du_vals24 = delay_product(bgp, 24.0 / t_scale; type="diffusion", x_scale=x_scale, t_scale=t_scale)
@@ -514,7 +513,7 @@ function plot_generalised_fkpp_delay(bgp::BootResults, x_scale, t_scale, filenam
         band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
         CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
     end
-    Legend(resultFigures[1, 3], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
+    Legend(resultFigures[1, 3], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
     save("figures/$filename", resultFigures, px_per_unit=2)
     return resultFigures
 end
@@ -545,7 +544,7 @@ function plot_pde_soln(bgp1, bgp2, bgp3, bgp4, bgp5, bgp6, x_scale, colors, assa
     bgps = [bgp1, bgp2, bgp3, bgp4, bgp5, bgp6]
     alphabet = join('a':'z')
     [plot_pde_soln!(fig, bgps[i], plot_idx[i][1], plot_idx[i][2], alphabet[i], x_scale, colors, i, assay_data, K) for i in 1:6]
-    Legend(fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:horizontal, labelsize=fontsize, titlesize=fontsize, titleposition=:left)
+    Legend(fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:horizontal, labelsize=fontsize, titlesize=fontsize, titleposition=:left)
     save("figures/$filename", fig, px_per_unit=2)
     return fig
 end
@@ -688,6 +687,7 @@ res_20 = model_fits(assay_data, 6, bootstrap_setup, GP_Restarts, 1e-4,
     x_scale, t_scale,
     pde_setup, optim_setup, 2923423431)
 
+Random.seed!(2921)
 res_10_FKD = plot_fisher_kolmogorov_delay(res_10[2].bgp, x_scale, t_scale, "allplots10000.pdf", colors, 1, assay_data, fontsize)
 res_10_GFKPP = plot_generalised_fkpp_delay(res_10[5].bgp, x_scale, t_scale, "lagergrenallplots10000.pdf", colors, 1, assay_data, fontsize)
 res_12_FKD = plot_fisher_kolmogorov_delay(res_12[2].bgp, x_scale, t_scale, "allplots12000.pdf", colors, 2, assay_data, fontsize)

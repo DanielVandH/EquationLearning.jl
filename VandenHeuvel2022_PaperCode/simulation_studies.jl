@@ -159,7 +159,7 @@ for (s, T) in enumerate(unique(t))
     band!(ax, bootₓ * x_scale, upper[range] / x_scale^2, lower[range] / x_scale^2, color=(colors[s], 0.35))
 end
 CairoMakie.ylims!(ax, 0.0, 0.002)
-Legend(fig[1, 2], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
+Legend(fig[1, 2], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 save("figures/simulation_study_fisher_kolmogorov_model_gp_data.pdf", fig, px_per_unit=2)
 
 # Now do the bootstrapping. We start by assuming a more general form of model that is a blend between Fisher-Kolmogorov and Porous-Fisher
@@ -211,7 +211,7 @@ for i = 1:r
 end
 
 Tu_vals, Du_vals, Ru_vals, u_vals, t_vals = curve_values(bgp; level=0.05, x_scale=x_scale, t_scale=t_scale)
-diffusionAxis = Axis(densityFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(d): Diffusion curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
+diffusionAxis = Axis(densityFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(d): Nonlinear diffusivity curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
 lines!(diffusionAxis, u_vals / x_scale^2, Du_vals[1])
 band!(diffusionAxis, u_vals / x_scale^2, Du_vals[3], Du_vals[2], color=(:blue, 0.35))
 lines!(diffusionAxis, u_vals / x_scale^2, D.(u_vals, Ref([β[1], 0.0]), Ref([K, 1.0, 1.0])) .* x_scale^2 / t_scale, color=:red, linestyle=:dash)
@@ -229,7 +229,7 @@ GPAxis = Axis(densityFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cel
     band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
     CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
 end
-Legend(densityFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
+Legend(densityFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 
 save("figures/simulation_study_initial_fisher_kolmogorov_results_porous_misspecification.pdf", densityFigures, px_per_unit=2)
 
@@ -279,7 +279,7 @@ for i = 1:r
 end
 
 Tu_vals, Du_vals, Ru_vals, u_vals, t_vals = curve_values(bgp; level=0.05, x_scale=x_scale, t_scale=t_scale)
-diffusionAxis = Axis(resultFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(c): Diffusion curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
+diffusionAxis = Axis(resultFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(c): Nonlinear diffusivity curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
 lines!(diffusionAxis, u_vals / x_scale^2, Du_vals[1])
 band!(diffusionAxis, u_vals / x_scale^2, Du_vals[3], Du_vals[2], color=(:blue, 0.35))
 lines!(diffusionAxis, u_vals / x_scale^2, D.(u_vals, Ref([β[1], 0.0]), Ref([K, 1.0, 1.0])) .* x_scale^2 / t_scale, color=:red, linestyle=:dash)
@@ -297,7 +297,7 @@ GPAxis = Axis(resultFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cell
     band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
     CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
 end
-Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
+Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 
 save("figures/simulation_study_final_fisher_kolmogorov_results_porous_misspecification.pdf", resultFigures, px_per_unit=2)
 
@@ -351,7 +351,7 @@ for i = 1:r
 end
 
 Tu_vals, Du_vals, Ru_vals, u_vals, t_vals = curve_values(bgp2; level=0.05, x_scale=x_scale, t_scale=t_scale)
-diffusionAxis = Axis(densityFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(c): Diffusion curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
+diffusionAxis = Axis(densityFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(c): Nonlinear diffusivity curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
 lines!(diffusionAxis, u_vals / x_scale^2, Du_vals[1])
 band!(diffusionAxis, u_vals / x_scale^2, Du_vals[3], Du_vals[2], color=(:blue, 0.35))
 lines!(diffusionAxis, u_vals / x_scale^2, D.(u_vals, β, Ref([1.0])) .* x_scale^2 / t_scale, color=:red, linestyle=:dash)
@@ -413,7 +413,7 @@ for i = 1:r
 end
 
 Tu_vals, Du_vals, Ru_vals, u_vals, t_vals = curve_values(bgp2; level=0.05, x_scale=x_scale, t_scale=t_scale)
-diffusionAxis = Axis(resultFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(c): Diffusion curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
+diffusionAxis = Axis(resultFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(c): Nonlinear diffusivity curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
 lines!(diffusionAxis, u_vals / x_scale^2, Du_vals[1])
 band!(diffusionAxis, u_vals / x_scale^2, Du_vals[3], Du_vals[2], color=(:blue, 0.35))
 lines!(diffusionAxis, u_vals / x_scale^2, D.(u_vals, β, [1.0]) .* x_scale^2 / t_scale, color=:red, linestyle=:dash)
@@ -440,7 +440,7 @@ GPAxis = Axis(resultFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cell
     band!(GPAxis, bgp2.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
     CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp2.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp2.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
 end
-Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
+Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 
 save("figures/simulation_study_final_fisher_kolmogorov_results.pdf", resultFigures, px_per_unit=2)
 
@@ -513,7 +513,7 @@ for (s, T) in enumerate(unique(t))
     band!(ax, bootₓ * x_scale, upper[range] / x_scale^2, lower[range] / x_scale^2, color=(colors[s], 0.35))
 end
 CairoMakie.ylims!(ax, 0.0, 0.002)
-Legend(fig[1, 2], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
+Legend(fig[1, 2], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 save("figures/simulation_study_delay_fisher_kolmogorov_model_gp_data.pdf", fig, px_per_unit=2)
 
 # Model 1: Correctly specified 
@@ -721,7 +721,7 @@ delayAxis = Axis(resultFigures[1, 3], xlabel=L"$t$ (h)", ylabel=L"$T(t)$", title
 lines!(delayAxis, t_vals * t_scale, Tu_vals[1])
 band!(delayAxis, t_vals * t_scale, Tu_vals[3], Tu_vals[2], color=(:blue, 0.35))
 lines!(delayAxis, t_vals * t_scale, T.(t_vals, Ref(α), Ref([1.0, 1.0])), color=:red, linestyle=:dash)
-diffusionAxis = Axis(resultFigures[2, 3], xlabel=L"$u$ (cells/μm²)", ylabel=L"$T(t)D(u)$ (μm²/h)", title="(f): Diffusion curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
+diffusionAxis = Axis(resultFigures[2, 3], xlabel=L"$u$ (cells/μm²)", ylabel=L"$T(t)D(u)$ (μm²/h)", title="(f): Nonlinear diffusivity curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
 Du_vals0 = delay_product(bgp1, 0.0; type="diffusion", x_scale=x_scale, t_scale=t_scale)
 Du_vals12 = delay_product(bgp1, 12.0 / t_scale; type="diffusion", x_scale=x_scale, t_scale=t_scale)
 Du_vals24 = delay_product(bgp1, 24.0 / t_scale; type="diffusion", x_scale=x_scale, t_scale=t_scale)
@@ -774,7 +774,7 @@ GPAxis = Axis(resultFigures[3, 2], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cell
     band!(GPAxis, bgp1.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
     CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp1.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp1.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
 end
-Legend(resultFigures[1:3, 4], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
+Legend(resultFigures[1:3, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 save("figures/simulation_study_bgp1_final_results_2.pdf", resultFigures, px_per_unit=2)
 
 #####################################################################
@@ -859,7 +859,7 @@ for i = 1:r
 end
 
 Du_vals, Ru_vals, u_vals = EquationLearning.curve_values(bgp; level=0.05, x_scale=x_scale, t_scale=t_scale)
-diffusionAxis = Axis(resultFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(e): Diffusion curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
+diffusionAxis = Axis(resultFigures[2, 1], xlabel=L"$u$ (cells/μm²)", ylabel=L"$D(u)$ (μm²/h)", title="(e): Nonlinear diffusivity curve", linewidth=1.3, linecolor=:blue, titlealign=:left)
 lines!(diffusionAxis, u_vals / x_scale^2, Du_vals[1])
 band!(diffusionAxis, u_vals / x_scale^2, Du_vals[3], Du_vals[2], color=(:blue, 0.35))
 Dfnc = u -> EquationLearning.evaluate_basis.(Ref(β), Ref(D), u, [K])
@@ -888,7 +888,7 @@ GPAxis = Axis(resultFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cell
     band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
     CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
 end
-Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], "Time (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
+Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 save("figures/simulation_study_final_fisher_kolmogorov_basis_approach.pdf", resultFigures, px_per_unit=2)
 
 #####################################################################
