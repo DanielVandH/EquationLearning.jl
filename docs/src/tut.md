@@ -353,4 +353,4 @@ julia> res.reaction_density
 julia> res.reaction_curve
 ```
 
-These plots may not always be what is desired by the user. Customising these plots based on the `bgp` results may take some work, and ways that we could for example plot all these plots in the same figure (as we do in the paper), are given in the plotting functions in [VandenHeuvel2022_PaperCode/paper_code.jl](https://github.com/DanielVandH/EquationLearning.jl/blob/5466b87ae7ed3d3d171123ddf3d595d881538490/VandenHeuvel2022_PaperCode/paper_code.jl).
+These plots may not always be what is desired by the user. Customising these plots based on the `bgp` results may take some work, and ways that we could for example plot all these plots in the same figure (as we do in the paper), are given in the plotting functions in [VandenHeuvel2022_PaperCode/paper_code.jl](https://github.com/DanielVandH/EquationLearning.jl/blob/5466b87ae7ed3d3d171123ddf3d595d881538490/VandenHeuvel2022_PaperCode/paper_code.jl). How we rescale the data back into the original variables is also illustrated in this code by using the corresponding scale arguments for the plotting functions (also see the manual).
