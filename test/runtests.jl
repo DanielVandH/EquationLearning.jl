@@ -444,4 +444,4 @@ end
     A = zeros(length(point), length(basis))
     EquationLearning.evaluate_basis!(val, coefficients, basis, point, p, A)
     @test val == val2
-end
+end 
