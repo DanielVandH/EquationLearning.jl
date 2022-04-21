@@ -24,7 +24,7 @@ Setup for the Gaussian processes. See also [`fit_GP`](@ref) and [`bootstrap_gp`]
 - `nugget::Float64`: Nugget term to add to the covariance matrix to be symmetric positive definite. This nugget is adapted to the blocks of the matrix based on the derivatives, as described in our paper.
 - `gp::Union{Missing, GPBase}`: Either `Nothing` or a stored Gaussian process. See also [`fit_GP`](@ref).
 """
-struct GP_Setup
+@struct_equal struct GP_Setup
     ℓₓ::Vector{Float64}
     ℓₜ::Vector{Float64}
     σ::Vector{Float64}
@@ -82,7 +82,7 @@ A struct defining some arguments for [`bootstrap_gp`](@ref).
 - `init_weight::Float64`: Weight factor for the initial condition for the GLS errors.
 - `show_losses::Bool`: `true` if the loss function should be printed to the REPL throughout the optimisation process, and `false` otherwise.
 """
-struct Bootstrap_Setup
+@struct_equal struct Bootstrap_Setup
     bootₓ::AbstractVector
     bootₜ::AbstractVector
     B::Int
@@ -139,7 +139,7 @@ A struct defining some arguments for the PDEs in [`bootstrap_gp`](@ref) and [`bo
 - `δt::Union{AbstractVector, Float64}`: A number or a vector specifying the spacing between returned times for the solutions to the PDEs or specific times, respectively.
 - `alg`: Algorithm to use for solving the PDEs. If you want to let `DifferentialEquations.jl` select the algorithm automatically, specify `alg = nothing`. If automatic differentiation is being used in the ODE algorithm, then no `Sundials` algorithms can be used.
 """
-struct PDE_Setup
+@struct_equal struct PDE_Setup
     meshPoints::AbstractVector
     LHS::Vector{Float64}
     RHS::Vector{Float64}
@@ -204,7 +204,7 @@ Structure for storing bootstrapping results. See [`bootstrap_gp`](@ref).
 - `bootstrap_setup`: The bootstrap setup used; see [`bootstrap_setup`](@ref).
 - `pde_setup`: The PDE setup used; see [`pde_setup`](@ref).
 """
-struct BootResults
+@struct_equal struct BootResults
     delayBases::Array{Float64}
     diffusionBases::Array{Float64}
     reactionBases::Array{Float64}
@@ -253,7 +253,7 @@ Structure for storing bootstrapping results from the basis approach. See [`basis
 - `bootstrap_setup`: The bootstrap setup used; see [`bootstrap_setup`](@ref).
 - `pde_setup`: The PDE setup used; see [`pde_setup`](@ref).
 """
-struct BasisBootResults
+@struct_equal struct BasisBootResults
     diffusionBases::Array{Float64}
     reactionBases::Array{Float64}
     gp::GPBase
@@ -296,7 +296,7 @@ Helpful structure for displaying results. This differs from e.g. [`BootResults`]
 - `pde_plot::Figure`: Plot for the PDE solutions.
 - `pde_error::Vector{Float64}`: Confidence interval for the PDE errors.
 """
-struct AllResults
+@struct_equal struct AllResults
     pde_solutions::Array{Float64}
     AIC::Vector{Float64}
     bgp::Union{BootResults,BasisBootResults}
