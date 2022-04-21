@@ -539,7 +539,7 @@ end
     end
 end
 
-@testset "Bootstrapping" begin
+@testset "Bootstrapping and PDEs" begin
     LinearAlgebra.BLAS.set_num_threads(1)
     x_scale = 1000.0
     t_scale = 24.0
@@ -723,6 +723,7 @@ end
         25.81300127559665,
         30.133934991179117,
         366.5262850744492]
+    @test initialCondition_all ≈ EquationLearning.compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp1, N, B, meshPoints)
     ICType = "gp"
     initialCondition_all = EquationLearning.compute_initial_conditions(x_pde, t_pde, u_pde, bgp1, ICType)
     @test size(initialCondition_all) == (N, B)
@@ -743,9 +744,124 @@ end
         274.57025177005727,
         274.6793082862983,
         254.67461233863506]
+    @test initialCondition_all ≈ EquationLearning.compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp1, N, B, meshPoints)
+
+    # Is compute_valid_pde_indices working correctly?
+    num_u = 500
+    num_t = 500
+    idx = EquationLearning.compute_valid_pde_indices(u_pde, num_t, num_u, nodes, weights, bgp1)
+    u_vals = range(minimum(bgp1.gp.y), maximum(bgp1.gp.y), length=num_u)
+    t_vals = collect(range(minimum(bgp1.Xₛⁿ[2, :]), maximum(bgp1.Xₛⁿ[2, :]), length=num_t))
+    Tuv = zeros(num_t, 1)
+    Duv = zeros(num_u, 1)
+    max_u = maximum(u_pde)
+    for j in idx
+        Duv .= bgp1.D.(u_vals, Ref(bgp1.diffusionBases[:, j]), Ref(bgp1.D_params))
+        Tuv .= bgp1.T.(t_vals, Ref(bgp1.delayBases[:, j]), Ref(bgp1.T_params))
+        Reaction = u -> bgp1.R(max_u / 2 * (u + 1), bgp1.reactionBases[:, j], bgp1.R_params) # missing a max_u/2 factor in front for this new integral, but thats fine since it doesn't change the sign
+        Ival = dot(weights, Reaction.(nodes))
+        @test !(any(Duv .< 0) || any(Tuv .< 0) || Ival < 0)
+    end
+    @test idx == collect(1:20)
+    @test EquationLearning.compute_valid_pde_indices(u_pde, num_t, num_u, nodes, weights, bgp1) == EquationLearning.compute_valid_pde_indices(bgp1, u_pde, num_t, num_u, bgp1.bootstrap_setup.B, bgp1.delayBases, bgp1.diffusionBases, bgp1.reactionBases, nodes, weights, bgp1.D_params, bgp1.R_params, bgp1.T_params)
+
+    # Is boot_pde_solve working correctly?
+    Random.seed!(23991)
+    pde_gp1 = boot_pde_solve(bgp1, x_pde, t_pde, u_pde; ICType="gp")
+    pde_data1 = boot_pde_solve(bgp1, x_pde, t_pde, u_pde; ICType="data")
+    @test pde_gp1[1:4, 1:2, 1] ≈ [286.193 283.972
+        284.789 283.416
+        283.386 282.86
+        281.983 282.304] atol = 1e-3
+    @test pde_gp1[97:103, 10:13, 2] ≈ [360.707 353.926 355.117 367.837
+        359.701 353.249 354.252 367.392
+        358.667 352.537 353.362 366.909
+        357.606 351.791 352.443 366.382
+        356.517 351.007 351.496 365.814
+        355.398 350.186 350.518 365.2
+        354.248 349.325 349.511 364.541] atol = 1e-2
+    @test pde_gp1[393:399, 17, 3:4] ≈ [227.213 376.747
+        234.011 384.888
+        240.753 393.071
+        247.722 401.337
+        254.626 409.632
+        261.75 418.0
+        268.798 426.388] atol = 1e-2
+    @test pde_gp1[192:195, 17:20, [5, 1]] ≈ [566.872 530.419 577.087 538.419
+        562.142 525.387 572.396 533.414
+        557.445 520.393 567.732 528.452
+        552.795 515.449 563.101 523.538;;;
+        71.6552 60.905 77.2089 62.1866
+        70.0164 59.2964 75.6363 60.5244
+        68.3776 57.6879 74.0637 58.8623
+        66.7388 56.0793 72.491 57.2001] atol = 1e-2
+    @test pde_data1[393:399, 10:13, 1] ≈ [35.4939 35.4939 35.4939 35.4939
+        39.0778 39.0778 39.0778 39.0778
+        43.8411 43.8411 43.8411 43.8411
+        48.6043 48.6043 48.6043 48.6043
+        53.3675 53.3675 53.3675 53.3675
+        58.1307 58.1307 58.1307 58.1307
+        62.8939 62.8939 62.8939 62.8939] atol = 1e-3
+    @test pde_data1[97:103, 10:13, 2] ≈ [359.728 358.423 358.395 360.845
+        358.791 357.406 357.324 359.787
+        357.695 356.408 356.327 358.835
+        356.721 355.356 355.216 357.743
+        355.586 354.32 354.176 356.754
+        354.57 353.227 353.02 355.624
+        353.391 352.147 351.932 354.591] atol = 1e-2
+    @test pde_data1[393:399, 17, 3:4] ≈ [217.946 368.162
+        224.935 376.381
+        231.794 385.065
+        239.005 393.409
+        246.063 402.231
+        253.477 410.677
+        260.717 419.618] atol = 1e-2
+    @test pde_data1[2:10, 17:20, [5, 1]] ≈ [1031.21 1020.77 1029.26 1022.01
+        1030.89 1020.6 1029.12 1021.93
+        1031.13 1020.68 1029.18 1021.92
+        1030.76 1020.47 1029.0 1021.79
+        1030.96 1020.5 1029.01 1021.74
+        1030.56 1020.24 1028.79 1021.57
+        1030.71 1020.23 1028.76 1021.47
+        1030.26 1019.93 1028.5 1021.26
+        1030.38 1019.87 1028.43 1021.12;;;
+        301.848 301.848 301.848 301.848
+        301.848 301.848 301.848 301.848
+        301.848 301.848 301.848 301.848
+        301.848 301.848 301.848 301.848
+        301.848 301.848 301.848 301.848
+        301.848 301.848 301.848 301.848
+        301.848 301.848 301.848 301.848
+        301.848 301.848 301.848 301.848
+        301.848 301.848 301.848 301.848] atol = 1e-1
+
+    # Is compute_ribbon_features working correctly?
+    X = [1 2 3 4 5; 6 7 8 9 10; 11 12 13 14 15; 16 17 18 19 20]
+    x_mean = [mean([1 2 3 4 5]), mean([6 7 8 9 10]), mean([11 12 13 14 15]), mean([16 17 18 19 20])]
+    x_lower = [quantile([1, 2, 3, 4, 5], 0.025), quantile([6, 7, 8, 9, 10], 0.025), quantile([11, 12, 13, 14, 15], 0.025), quantile([16, 17, 18, 19, 20], 0.025)]
+    x_upper = [quantile([1, 2, 3, 4, 5], 0.975), quantile([6, 7, 8, 9, 10], 0.975), quantile([11, 12, 13, 14, 15], 0.975), quantile([16, 17, 18, 19, 20], 0.975)]
+    @test (x_mean, x_lower, x_upper) == EquationLearning.compute_ribbon_features(X)
+
+    # Is pde_values working correctly?
+    soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_data1, bgp1)
+    for j in 1:length(bgp1.pde_setup.δt)
+        @test all((soln_vals_mean[:, j], soln_vals_lower[:, j], soln_vals_upper[:, j]) .≈ EquationLearning.compute_ribbon_features(pde_data1[:, :, j]))
+    end
+
+    # Is delay_product working correctly?
+    @test all(Du_vals .≈ delay_product(bgp1, 0.5; x_scale, t_scale))
+    @test all(Ru_vals .≈ delay_product(bgp1, 0.5; x_scale, t_scale, type="reaction"))
+
+    # Is error_comp working correctly?
+    err_CI1 = error_comp(bgp1, pde_data1, x_pde, t_pde, u_pde)
+    err_CI2 = error_comp(bgp1, pde_data1, x_pde, t_pde, u_pde; compute_mean = true)
+    @test err_CI1 ≈ [1.9667249884124907, 2.3773654919819327]
+    @test err_CI2 ≈ 2.1396908087697524
 end
 
 #(:delayBases, :diffusionBases, :reactionBases, :gp, 
 #:zvals, :Xₛ, :Xₛⁿ, :bootₓ, :bootₜ, :T, :D, :D′, :R, :R′, 
 #:D_params, :R_params, :T_params, :μ, :L, :gp_setup, 
 #:bootstrap_setup, :pde_setup)
+
+#soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_data, bgp2)
