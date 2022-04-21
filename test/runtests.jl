@@ -613,9 +613,16 @@ end
     @test gp.kernel.iℓ2 ≈ [24.84827104335778, 0.503514925015118]
     @test gp.kernel.σ2 ≈ 470228.28092725377
     @test gp.logNoise.value ≈ 2.76897258470674
-    @test all((sum(μ), prod(abs.(log.(abs.(μ))) .^ (0.0001)), median(μ), mean(μ), mean(sin.(μ))) .≈ ((118447.98230142379, 1.972569094606653, 328.7270614832669, 32.902217305951055, 0.0032722144858676003)))
-    @test all((mean(L), median(Symmetric(L)), sum(Symmetric(L)), Symmetric(L)[2, 2], sum(eigen(Symmetric(L)[1:200, 1:200]).values)) .≈ ((0.050455323132358405, 0.0, 1630.943707819713, 6.408267809805805, 39.37032898512207)))
-
+    @test sum(μ) ≈ 118447.98230142379 atol=1e-2
+    @test prod(abs.(log.(abs.(μ))).^(0.0001)) ≈ 1.972569094606653 atol=1e-2
+    @test median(μ) ≈ 328.7270614832669 atol=1e-2
+    @test mean(μ) ≈ 32.902217305951055 atol=1e-2
+    @test mean(sin.(μ)) ≈ 0.0032722144858676003 atol=1e-2
+    @test mean(L) ≈ 0.050455323132358405 atol=1e-2
+    @test sum(Symmetric(L)) ≈ 1630.943707819713 atol=1e-2
+    @test Symmetric(L)[2, 2] ≈ 6.408267809805805 atol=1e-2
+    @test sum(eigen(Symmetric(L)[1:200, 1:200])).values ≈ 39.37032898512207 atol=1e-2
+    @test median(Symmetric(L)) ≈ 0.0 atol = 1e-2
     # Is bootstrap_gp working correctly?
     Random.seed!(99992001)
     T = (t, α, p) -> 1.0
@@ -674,9 +681,9 @@ end
     # Is curve_values working correctly?
     Tu_vals, Du_vals, Ru_vals, u_vals, t_vals = curve_values(bgp1; level=0.05, x_scale=x_scale, t_scale=t_scale)
     @test Tu_vals[1] == Tu_vals[2] == Tu_vals[3] == repeat([1.0], 500)
-    @test unique(Du_vals[1]) ≈ [269.39564107403555]
-    @test unique(Du_vals[2]) ≈ [230.84585165548006]
-    @test unique(Du_vals[3]) ≈ [296.06600312482414]
+    @test unique(Du_vals[1]) ≈ [269.39564107403555] atol=1e-2
+    @test unique(Du_vals[2]) ≈ [230.84585165548006] atol=1e-2
+    @test unique(Du_vals[3]) ≈ [296.06600312482414] atol=1e-2
     @test Ru_vals[1][[1, 10, 59, 100, 250, 397, 500]] ≈ vec([0.10215351577478515
         1.0035180776273855
         5.518738862966758
@@ -688,13 +695,13 @@ end
         8.689291672259712
         1.8614775520470275
         16.151722660202392
-        18.26007595965338]
+        18.26007595965338] atol=1e-2
     @test Ru_vals[3][[1, 2, 55, 100, 100, 325]] ≈ [0.10324078282440266
         0.205574146665954
         5.230070013413127
         8.88107441518282
         8.88107441518282
-        18.66309700965525]
+        18.66309700965525] atol=1e-2
     @test u_vals[[1, 3, 5, 100, 500]] ≈ [2.3216216643979295
         6.9366378754184215
         11.551654086438912
@@ -722,7 +729,7 @@ end
     ICType = "data"
     initialCondition_all = EquationLearning.compute_initial_conditions(x_pde, t_pde, u_pde, bgp1, ICType)
     @test size(initialCondition_all) == (N, B)
-    @test initialCondition_all[:, 1] == initialCondition_all[:, 10] == initialCondition_all[:, 20]
+    @test initialCondition_all[:, 1] == initialCondition_all[:, 10] == initialCondition_all[:, 20] atol=1e-2
     @test initialCondition_all[1:20, 5] ≈ [301.84804479333087,
         301.84804479333087,
         301.84804479333087,
@@ -742,18 +749,18 @@ end
         290.8501540729294,
         286.4746491626621,
         282.09914425239486,
-        277.7236393421276]
+        277.7236393421276] atol=1e-2
     @test initialCondition_all[[19, 59, 300, 301, 391, 500], 1] ≈ [282.09914425239486,
         261.4782754485342,
         26.724265114140444,
         25.81300127559665,
         30.133934991179117,
-        366.5262850744492]
+        366.5262850744492] atol=1e-2
     @test initialCondition_all ≈ EquationLearning.compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp1, N, B, meshPoints)
     ICType = "gp"
     initialCondition_all = EquationLearning.compute_initial_conditions(x_pde, t_pde, u_pde, bgp1, ICType)
     @test size(initialCondition_all) == (N, B)
-    @test initialCondition_all[391, 4] ≈ 54.136239631410625
+    @test initialCondition_all[391, 4] ≈ 54.136239631410625 atol=1e-2
     @test initialCondition_all[[1, 2, 5, 15, 100, 99, 500, 399, 4], 1] ≈ vec([304.66050973379447
         302.53289434633825
         296.15004818396966
@@ -769,7 +776,7 @@ end
         362.6555237115071
         301.76756285136713
         300.189574900559
-        252.31154742255802])
+        252.31154742255802]) atol=1e-2
     @test initialCondition_all ≈ EquationLearning.compute_initial_conditions(x_pde, t_pde, u_pde, ICType, bgp1, N, B, meshPoints)
 
     # Is compute_valid_pde_indices working correctly?
@@ -876,13 +883,13 @@ end
 
     # Is delay_product working correctly?
     @test all(Du_vals .≈ delay_product(bgp1, 0.5; x_scale, t_scale))
-    @test all(Ru_vals .≈ delay_product(bgp1, 0.5; x_scale, t_scale, type="reaction"))
+    @test all(Ru_vals .≈ delay_product(bgp1, 0.5; x_scale, t_scale, type="reaction")) 
 
     # Is error_comp working correctly?
     err_CI1 = error_comp(bgp1, pde_data1, x_pde, t_pde, u_pde)
     err_CI2 = error_comp(bgp1, pde_data1, x_pde, t_pde, u_pde; compute_mean=true)
-    @test err_CI1 ≈ [2.006713037478207,2.482940618305627]
-    @test err_CI2 ≈ 2.1809270509678784
+    @test err_CI1 ≈ [2.006713037478207,2.482940618305627] atol=1e-2
+    @test err_CI2 ≈ 2.1809270509678784 atol=1e-2
 end
 
 #(:delayBases, :diffusionBases, :reactionBases, :gp, 
