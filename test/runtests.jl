@@ -621,7 +621,7 @@ end
     @test mean(L) ≈ 0.050455323132358405 atol=1e-2
     @test sum(Symmetric(L)) ≈ 1630.943707819713 atol=1e-2
     @test Symmetric(L)[2, 2] ≈ 6.408267809805805 atol=1e-2
-    @test sum(eigen(Symmetric(L)[1:200, 1:200])).values ≈ 39.37032898512207 atol=1e-2
+    @test sum(eigen(Symmetric(L)[1:200, 1:200]).values) ≈ 39.37032898512207 atol=1e-2
     @test median(Symmetric(L)) ≈ 0.0 atol = 1e-2
     # Is bootstrap_gp working correctly?
     Random.seed!(99992001)
@@ -769,7 +769,7 @@ end
         239.10847806836728
         337.1533730159008
         83.1298542579187
-        298.2776635714259])
+        298.2776635714259]) atol=1e-2
     @test initialCondition_all[[1, 100, 400, 499, 2, 3, 50], 7] ≈ vec([303.3455508021752
         232.67652427131264
         88.91228170700387
