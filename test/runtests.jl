@@ -729,7 +729,7 @@ end
     ICType = "data"
     initialCondition_all = EquationLearning.compute_initial_conditions(x_pde, t_pde, u_pde, bgp1, ICType)
     @test size(initialCondition_all) == (N, B)
-    @test initialCondition_all[:, 1] == initialCondition_all[:, 10] == initialCondition_all[:, 20] atol=1e-2
+    @test initialCondition_all[:, 1] == initialCondition_all[:, 10] == initialCondition_all[:, 20] 
     @test initialCondition_all[1:20, 5] ≈ [301.84804479333087,
         301.84804479333087,
         301.84804479333087,
