@@ -31,7 +31,6 @@ using SharedArrays
 using PrettyTables
 using StructEquality
 using OrderedCollections
-using Coverage
 
 #####################################################################
 ## Load files 
