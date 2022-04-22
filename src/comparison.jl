@@ -90,7 +90,8 @@ end
     compare_AICs(AICs::Vector{Float64}...)
 
 Compares many AICs by comparing entry-wise. The results are averaged. Assumes that each AIC is of equal length, 
-otherwise computes only up to the minimum length.
+otherwise computes only up to the minimum length. The returned value is such that the `(i, j)` entry 
+gives the proportion of times that model `i` has been given interpretation `j` from [`classify_Δᵢ`](@ref).
 """
 function compare_AICs(AICs::Vector{Float64}...)
     num_models = length(AICs)
