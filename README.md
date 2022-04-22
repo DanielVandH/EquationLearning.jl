@@ -1,6 +1,6 @@
 # Equation Learning
 
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://danielvandh.github.io/EquationLearning.jl/dev/home.html)
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://danielvandh.github.io/EquationLearning.jl/dev/home.html) [![codecov](https://codecov.io/gh/DanielVandH/EquationLearning.jl/branch/main/graph/badge.svg?token=0C6HHS1Q9F)](https://codecov.io/gh/DanielVandH/EquationLearning.jl)
 
 This package contains code to perform equation learning with bootstrapping using Gaussian processes, as described in our paper <...>. Currently the method is only implemented for partial differential equations of the form
 
