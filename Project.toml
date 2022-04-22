@@ -51,6 +51,7 @@ ODEInterfaceDiffEq = "3"
 Optim = "1"
 PreallocationTools = "0.2"
 StatsBase = "0.33"
+StructEquality = "2"
 Sundials = "4"
 julia = "1"
 
