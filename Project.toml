@@ -1,6 +1,6 @@
 name = "EquationLearning"
 uuid = "bff85f54-4e10-4475-8cea-b2bdf0d9c3a9"
-authors = ["DanielVandH <danj.vandenheuvel@gmail.com> and contributors"]
+authors = ["Daniel VandenHeuvel <vandenh2@qut.edu.au> and contributors"]
 version = "0.1.0"
 
 [deps]
