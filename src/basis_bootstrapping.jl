@@ -379,7 +379,7 @@ function compute_valid_pde_indices(u_pde, num_u, nodes, weights, bgp::BasisBootR
 end
 
 """
-    boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples = 1.0, ICType = "data")
+    boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde, ICType = "data")
 
 Solve the PDEs corresponding to the bootstrap iterates in `bgp` obtained from [`basis_bootstrap_gp`](@ref). 
 
@@ -390,7 +390,6 @@ Solve the PDEs corresponding to the bootstrap iterates in `bgp` obtained from [`
 - `u_pde`: The density data to use for obtaining the initial condition.
 
 # Keyword Arguments 
-- `prop_samples = 1.0`: The proportion of bootstrap samples to compute teh corresponding PDE soluton to.
 - `ICType = "data"`: The type of initial condition to use. Should be either `"data"` or `"gp"`.
 
 # Outputs 
@@ -401,9 +400,7 @@ The `_pde` subscript is used to indicate that these data need not be the same as
 For example, we may have 3 replicates of some data which we would easily use in [`bootstrap_gp`](@ref), but for the PDE we would need to average these 
 together for obtaining the solutions.
 """
-function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples=1.0, ICType="data")
-    #@assert 0 < prop_samples ≤ 1.0 "The values of prop_samples must be in (0, 1]."
-    #@assert ICType ∈ ["data", "gp"]
+function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; ICType="data")
     nodes, weights = gausslegendre(5)
     d = length(bgp.D)
     r = length(bgp.R)
@@ -413,10 +410,9 @@ function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples
     B = size(dr, 2)
 
     # Setup PDE
-    rand_pde = convert(Int64, trunc(prop_samples * B))
     N = length(bgp.pde_setup.meshPoints)
     M = length(bgp.pde_setup.δt)
-    solns_all = zeros(N, rand_pde, M)
+    solns_all = zeros(N, B, M)
 
     # Compute the initial conditions
     initialCondition_all = compute_initial_conditions(x_pde, t_pde, u_pde, bgp, ICType)
@@ -427,7 +423,6 @@ function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples
     # Solve PDEs
     initialCondition = zeros(N, 1) # Setup cache array
     finalTime = maximum(bgp.pde_setup.δt)
-    sample_idx = StatsBase.sample(idx, rand_pde)
     Du = zeros(N, 1)
     Ru = zeros(N, 1)
     D′u = zeros(N, 1)
@@ -437,15 +432,12 @@ function boot_pde_solve(bgp::BasisBootResults, x_pde, t_pde, u_pde; prop_samples
     Δx = diff(bgp.pde_setup.meshPoints)
     V = @views 1 / 2 * [Δx[1]; Δx[1:(N-2)] + Δx[2:(N-1)]; Δx[N-1]]
     tspan = (0.0, finalTime)
-    @views @muladd @inbounds for (pdeidx, coeff) in collect(enumerate(sample_idx)) # Don't need collect here, but it was useful previously when dealing with threading (before we removed threading). Just keeping it as a reminder.
+    @views @muladd @inbounds for (pdeidx, coeff) in enumerate(idx)
         initialCondition .= initialCondition_all[:, coeff]
         p = (N, V, Δx, bgp.pde_setup.LHS..., bgp.pde_setup.RHS..., Du, Ru, D′u, R′u, bgp.D, bgp.R, bgp.D′, bgp.R′, dr[:, coeff], rr[:, coeff], bgp.D_params, bgp.R_params, A₁, A₂)
         prob = ODEProblem(basis_sysdegeneral!, initialCondition, tspan, p)
-        #try
         solns_all[:, pdeidx, :] .= hcat(DifferentialEquations.solve(prob, bgp.pde_setup.alg, saveat=bgp.pde_setup.δt).u...)
-        print("Solving PDEs: Step $pdeidx of $rand_pde.\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
-        #catch
-        #end
+        print("Solving PDEs: Step $pdeidx of $B.\u001b[1000D") # https://discourse.julialang.org/t/update-variable-in-logged-message-without-printing-a-new-line/32755
     end
 
     # Return

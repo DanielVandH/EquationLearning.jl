@@ -16,6 +16,7 @@ using FastGaussQuadrature
 using StructEquality
 using Optim
 using CairoMakie
+using Sundials
 LinearAlgebra.BLAS.set_num_threads(1)
 import Base: ==
 function ==(x::PreallocationTools.DiffCache, y::PreallocationTools.DiffCache)
