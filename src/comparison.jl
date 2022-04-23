@@ -15,7 +15,7 @@ Banks and Joyner (2017) [https://doi.org/10.1016/j.aml.2017.05.005].
 """
 function AIC(bgp::Union{BootResults,BasisBootResults}, x, t, u; correct=true, pde_solns=nothing)
     ## Number of model parameters and bootstrap iterations
-    tt = size(bgp.delayBases, 1)
+    tt = bgp isa BootResults ? size(bgp.delayBases, 1) : 0
     d = size(bgp.diffusionBases, 1)
     r = size(bgp.reactionBases, 1)
     κ = tt + d + r
