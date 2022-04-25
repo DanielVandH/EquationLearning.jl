@@ -661,7 +661,7 @@ delay_scales5, diffusion_scales5, reaction_scales5 = [T_params5[1], T_params5[2]
 delay_scales = [delay_scales1, delay_scales2, delay_scales3, delay_scales4, delay_scales5]
 diffusion_scales = [diffusion_scales1, diffusion_scales2, diffusion_scales3, diffusion_scales4, diffusion_scales5]
 reaction_scales = [reaction_scales1, reaction_scales2, reaction_scales3, reaction_scales4, reaction_scales5]
-res = AllResults(x_pde, t_pde, u_pde, bgp1, bgp2, bgp3, bgp4, bgp5; delay_scales, diffusion_scales, reaction_scales, x_scale, t_scale)
+res = AllResults(x_pde, t_pde, u_pde, bgp1, bgp2, bgp3, bgp4, bgp5; delay_scales, diffusion_scales, reaction_scales, x_scale, t_scale) # paper uses different column order
 
 # Plot the bgp1 results 
 pde_gp = boot_pde_solve(bgp1, x_pde, t_pde, u_pde; ICType="gp")
