@@ -37,7 +37,7 @@ Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
-CairoMakie = "0.7"
+CairoMakie = "0.7, 0.8"
 DataFrames = "1"
 Dierckx = "0.5"
 DifferentialEquations = "7"
