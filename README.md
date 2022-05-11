@@ -19,3 +19,5 @@ in the Julia REPL. Note that the `]` prefix is to enter the Pkg REPL.
 # Issues 
 
 Any suggestions, questions, and/or issues with the package should be given as an issue, or as an email to [Daniel VandenHeuvel](mailto:vandenh2@qut.edu.au?subject=GP%20Equation%20Learning&body=Dear%20Daniel,) (this link opens an email to vandenh2@qut.edu.au). Issues are preferred.
+
+At the time of writing, the Issues tab is essentially being used by myself as a to-do list. Feel free to comment or ask about these features as well.
