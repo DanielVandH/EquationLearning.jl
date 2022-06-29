@@ -52,6 +52,7 @@ Optim = "1"
 PreallocationTools = "0.2"
 StatsBase = "0.33"
 Sundials = "4"
+TimerOutputs = "0.5"
 julia = "1"
 
 [extras]
