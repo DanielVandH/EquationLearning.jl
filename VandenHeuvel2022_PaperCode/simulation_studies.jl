@@ -61,7 +61,8 @@ for i = 1:6
     dat.Time ./= t_scale
     push!(assay_data, dat)
 end
-K = 1.7e-3 * x_scale^2 # Cell carrying capacity as estimated from Jin et al. (2016).
+unscaled_K = 1.7e-3 
+K = unscaled_K * x_scale^2 # Carrying capacity density as estimated from Jin et al. (2016).
 
 #####################################################################
 ## Define some global parameters for bootstrapping
@@ -148,17 +149,17 @@ gp_setup = EquationLearning.GP_Setup(u; ℓₓ, ℓₜ, σ, σₙ, GP_Restarts=2
 # Plot the actual GP
 Σ = L * transpose(L)
 fig = Figure(fontsize=fontsize, resolution=(800, 400))
-ax = Axis(fig[1, 1], xlabel=L"$x$ (μm)", ylabel=L"$u$ (cells/μm²)")
+ax = Axis(fig[1, 1], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K")
 lower = μ .- 2sqrt.(diag(Σ))
 upper = μ .+ 2sqrt.(diag(Σ))
 for (s, T) in enumerate(unique(t))
-    scatter!(ax, x[t.==T] * x_scale, u[t.==T] / x_scale^2, color=colors[s], markersize=3)
+    scatter!(ax, x[t.==T] * x_scale, u[t.==T] / x_scale^2 / unscaled_K, color=colors[s], markersize=3)
     idx = findmin(abs.(bootₜ .- T))[2]
     range = ((idx-1)*nₓ+1):(idx*nₓ)
-    lines!(ax, bootₓ * x_scale, μ[range] / x_scale^2, color=colors[s])
-    band!(ax, bootₓ * x_scale, upper[range] / x_scale^2, lower[range] / x_scale^2, color=(colors[s], 0.35))
+    lines!(ax, bootₓ * x_scale, μ[range] / x_scale^2 / unscaled_K, color=colors[s])
+    band!(ax, bootₓ * x_scale, upper[range] / x_scale^2 / unscaled_K, lower[range] / x_scale^2 / unscaled_K, color=(colors[s], 0.35))
 end
-CairoMakie.ylims!(ax, 0.0, 0.002)
+CairoMakie.ylims!(ax, 0.0, 1.3)
 Legend(fig[1, 2], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 save("figures/simulation_study_fisher_kolmogorov_model_gp_data.pdf", fig, px_per_unit=2)
 
@@ -223,11 +224,11 @@ lines!(reactionAxis, u_vals / x_scale^2, R.(u_vals, γ, Ref([K, 1.0])) / t_scale
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_gp, bgp)
 err_CI = error_comp(bgp, pde_gp, x_pde, t_pde, u_pde)
 M = length(bgp.pde_setup.δt)
-GPAxis = Axis(densityFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)", title=@sprintf("(f): PDE (Sampled IC)\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
+GPAxis = Axis(densityFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K", title=@sprintf("(f): PDE (Sampled IC). Error: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
 @views for j in 1:M
-    lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color=colors[j])
-    band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
-    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
+    lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2 / unscaled_K, color=colors[j])
+    band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2 / unscaled_K, soln_vals_lower[:, j] / x_scale^2 / unscaled_K, color=(colors[j], 0.35))
+    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2 / unscaled_K, color=colors[j], markersize=3)
 end
 Legend(densityFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 
@@ -291,11 +292,11 @@ lines!(reactionAxis, u_vals / x_scale^2, R.(u_vals, γ, Ref([K, 1.0])) / t_scale
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_gp, bgp)
 err_CI = error_comp(bgp, pde_gp, x_pde, t_pde, u_pde)
 M = length(bgp.pde_setup.δt)
-GPAxis = Axis(resultFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)", title=@sprintf("(f): PDE (Sampled IC)\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
+GPAxis = Axis(resultFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K", title=@sprintf("(f): PDE (Sampled IC). Error: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
 @views for j in 1:M
-    lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color=colors[j])
-    band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
-    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
+    lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2 / unscaled_K, color=colors[j])
+    band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2 / unscaled_K, soln_vals_lower[:, j] / x_scale^2 / unscaled_K, color=(colors[j], 0.35))
+    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2 / unscaled_K, color=colors[j], markersize=3)
 end
 Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 
@@ -425,20 +426,20 @@ lines!(reactionAxis, u_vals / x_scale^2, R.(u_vals, γ, Ref([K, 1.0])) / t_scale
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_data, bgp2)
 err_CI = error_comp(bgp2, pde_data, x_pde, t_pde, u_pde)
 M = length(bgp2.pde_setup.δt)
-GPAxis = Axis(resultFigures[1, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)", title=@sprintf("(e): PDE (Spline IC)\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
+GPAxis = Axis(resultFigures[1, 3], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K", title=@sprintf("(e): PDE (Spline IC). Error: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
 @views for j in 1:M
-    lines!(GPAxis, bgp2.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color=colors[j])
-    band!(GPAxis, bgp2.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
-    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp2.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp2.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
+    lines!(GPAxis, bgp2.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2 / unscaled_K, color=colors[j])
+    band!(GPAxis, bgp2.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2 / unscaled_K, soln_vals_lower[:, j] / x_scale^2 / unscaled_K, color=(colors[j], 0.35))
+    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp2.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp2.pde_setup.δt[j]] / x_scale^2 / unscaled_K, color=colors[j], markersize=3)
 end
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_gp, bgp2)
 err_CI = error_comp(bgp2, pde_gp, x_pde, t_pde, u_pde)
 M = length(bgp2.pde_setup.δt)
-GPAxis = Axis(resultFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)", title=@sprintf("(f): PDE (Sampled IC)\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
+GPAxis = Axis(resultFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K", title=@sprintf("(f): PDE (Sampled IC). Error: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
 @views for j in 1:M
-    lines!(GPAxis, bgp2.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color=colors[j])
-    band!(GPAxis, bgp2.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
-    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp2.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp2.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
+    lines!(GPAxis, bgp2.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2 / unscaled_K, color=colors[j])
+    band!(GPAxis, bgp2.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2 / unscaled_K, soln_vals_lower[:, j] / x_scale^2 / unscaled_K, color=(colors[j], 0.35))
+    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp2.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp2.pde_setup.δt[j]] / x_scale^2 / unscaled_K, color=colors[j], markersize=3)
 end
 Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 
@@ -502,17 +503,17 @@ gp_setup = EquationLearning.GP_Setup(u; ℓₓ, ℓₜ, σ, σₙ, GP_Restarts=2
 # Plot the actual GP
 Σ = L * transpose(L)
 fig = Figure(fontsize=fontsize, resolution=(800, 400))
-ax = Axis(fig[1, 1], xlabel=L"$x$ (μm)", ylabel=L"$u$ (cells/μm²)")
+ax = Axis(fig[1, 1], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K")
 lower = μ .- 2sqrt.(diag(Σ))
 upper = μ .+ 2sqrt.(diag(Σ))
 for (s, T) in enumerate(unique(t))
-    scatter!(ax, x[t.==T] * x_scale, u[t.==T] / x_scale^2, color=colors[s], markersize=3)
+    scatter!(ax, x[t.==T] * x_scale, u[t.==T] / x_scale^2 / unscaled_K, color=colors[s], markersize=3)
     idx = findmin(abs.(bootₜ .- T))[2]
     range = ((idx-1)*nₓ+1):(idx*nₓ)
-    lines!(ax, bootₓ * x_scale, μ[range] / x_scale^2, color=colors[s])
-    band!(ax, bootₓ * x_scale, upper[range] / x_scale^2, lower[range] / x_scale^2, color=(colors[s], 0.35))
+    lines!(ax, bootₓ * x_scale, μ[range] / x_scale^2 / unscaled_K, color=colors[s])
+    band!(ax, bootₓ * x_scale, upper[range] / x_scale^2 / unscaled_K, lower[range] / x_scale^2 / unscaled_K, color=(colors[s], 0.35))
 end
-CairoMakie.ylims!(ax, 0.0, 0.002)
+CairoMakie.ylims!(ax, 0.0, 1.3)
 Legend(fig[1, 2], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 save("figures/simulation_study_delay_fisher_kolmogorov_model_gp_data.pdf", fig, px_per_unit=2)
 
@@ -759,20 +760,20 @@ lines!(reactionAxis, u_vals / x_scale^2, R.(u_vals, γ, Ref([K, 1.0])) / t_scale
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_data, bgp1)
 err_CI = error_comp(bgp1, pde_data, x_pde, t_pde, u_pde)
 M = length(bgp1.pde_setup.δt)
-dataAxis = Axis(resultFigures[3, 1], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)", title=@sprintf("(g): PDE (Spline IC)\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
+dataAxis = Axis(resultFigures[3, 1], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K", title=@sprintf("(g): PDE (Spline IC). Error: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
 @views for j in 1:M
-    lines!(dataAxis, bgp1.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color=colors[j])
-    band!(dataAxis, bgp1.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
-    CairoMakie.scatter!(dataAxis, x_pde[t_pde.==bgp1.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp1.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
+    lines!(dataAxis, bgp1.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2 / unscaled_K, color=colors[j])
+    band!(dataAxis, bgp1.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2 / unscaled_K, soln_vals_lower[:, j] / x_scale^2 / unscaled_K, color=(colors[j], 0.35))
+    CairoMakie.scatter!(dataAxis, x_pde[t_pde.==bgp1.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp1.pde_setup.δt[j]] / x_scale^2 / unscaled_K, color=colors[j], markersize=3)
 end
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_gp, bgp1)
 err_CI = error_comp(bgp1, pde_gp, x_pde, t_pde, u_pde)
 M = length(bgp1.pde_setup.δt)
-GPAxis = Axis(resultFigures[3, 2], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)", title=@sprintf("(h): PDE (Sampled IC)\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
+GPAxis = Axis(resultFigures[3, 2], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K", title=@sprintf("(h): PDE (Sampled IC). Error: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
 @views for j in 1:M
-    lines!(GPAxis, bgp1.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color=colors[j])
-    band!(GPAxis, bgp1.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
-    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp1.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp1.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
+    lines!(GPAxis, bgp1.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2 / unscaled_K, color=colors[j])
+    band!(GPAxis, bgp1.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2 / unscaled_K, soln_vals_lower[:, j] / x_scale^2 / unscaled_K, color=(colors[j], 0.35))
+    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp1.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp1.pde_setup.δt[j]] / x_scale^2 / unscaled_K, color=colors[j], markersize=3)
 end
 Legend(resultFigures[1:3, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 save("figures/simulation_study_bgp1_final_results_2.pdf", resultFigures, px_per_unit=2)
@@ -873,20 +874,20 @@ lines!(reactionAxis, u_vals / x_scale^2, Rfnc(u_vals) / t_scale, color=:red, lin
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_data, bgp)
 err_CI = error_comp(bgp, pde_data, x_pde, t_pde, u_pde)
 M = length(bgp.pde_setup.δt)
-dataAxis = Axis(resultFigures[1, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)", title=@sprintf("(g): PDE (Spline IC)\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
+dataAxis = Axis(resultFigures[1, 3], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K", title=@sprintf("(g): PDE (Spline IC). Error: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
 @views for j in 1:M
-    lines!(dataAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color=colors[j])
-    band!(dataAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
-    CairoMakie.scatter!(dataAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
+    lines!(dataAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2 / unscaled_K, color=colors[j])
+    band!(dataAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2 / unscaled_K, soln_vals_lower[:, j] / x_scale^2 / unscaled_K, color=(colors[j], 0.35))
+    CairoMakie.scatter!(dataAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2 / unscaled_K, color=colors[j], markersize=3)
 end
 soln_vals_mean, soln_vals_lower, soln_vals_upper = pde_values(pde_gp, bgp)
 err_CI = error_comp(bgp, pde_gp, x_pde, t_pde, u_pde)
 M = length(bgp.pde_setup.δt)
-GPAxis = Axis(resultFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"$u(x, t)$ (cells/μm²)", title=@sprintf("(h): PDE (Sampled IC)\nError: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
+GPAxis = Axis(resultFigures[2, 3], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K", title=@sprintf("(h): PDE (Sampled IC). Error: (%.4g, %.4g)", err_CI[1], err_CI[2]), titlealign=:left)
 @views for j in 1:M
-    lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2, color=colors[j])
-    band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2, soln_vals_lower[:, j] / x_scale^2, color=(colors[j], 0.35))
-    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2, color=colors[j], markersize=3)
+    lines!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2 / unscaled_K, color=colors[j])
+    band!(GPAxis, bgp.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2 / unscaled_K, soln_vals_lower[:, j] / x_scale^2 / unscaled_K, color=(colors[j], 0.35))
+    CairoMakie.scatter!(GPAxis, x_pde[t_pde.==bgp.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgp.pde_setup.δt[j]] / x_scale^2 / unscaled_K, color=colors[j], markersize=3)
 end
 Legend(resultFigures[1:2, 4], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:vertical, labelsize=fontsize, titlesize=fontsize, titleposition=:top)
 save("figures/simulation_study_final_fisher_kolmogorov_basis_approach.pdf", resultFigures, px_per_unit=2)

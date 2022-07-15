@@ -165,7 +165,7 @@ LHS = [0.0, 1.0, 0.0]
 RHS = [0.0, -1.0, 0.0]
 alg = Tsit5()
 N_thin = 70
-meshPoints = LinRange(75.0 / x_scale, 1875.0 / x_scale, 500)
+meshPoints = LinRange(75.0 / x_scale, 1875.0 / x_scale, 50)
 pde_setup = EquationLearning.PDE_Setup(meshPoints, LHS, RHS, finalTime, δt, alg)
 
 ## Setup bootstrapping 
@@ -689,17 +689,17 @@ res_20 = model_fits(assay_data, 6, bootstrap_setup, GP_Restarts, 1e-4,
     pde_setup, optim_setup, 2923423431)
 
 Random.seed!(2921)
-res_10_FKD = plot_fisher_kolmogorov_delay(res_10[2].bgp, x_scale, t_scale, "allplots10000.pdf", colors, 1, assay_data, fontsize, unscaled_K)
-res_10_GFKPP = plot_generalised_fkpp_delay(res_10[5].bgp, x_scale, t_scale, "lagergrenallplots10000.pdf", colors, 1, assay_data, fontsize, unscaled_K)
-res_12_FKD = plot_fisher_kolmogorov_delay(res_12[2].bgp, x_scale, t_scale, "allplots12000.pdf", colors, 2, assay_data, fontsize, unscaled_K)
-res_12_GFKPP = plot_generalised_fkpp_delay(res_12[5].bgp, x_scale, t_scale, "lagergrenallplots12000.pdf", colors, 2, assay_data, fontsize, unscaled_K)
-res_14_FKD = plot_fisher_kolmogorov_delay(res_14[2].bgp, x_scale, t_scale, "allplots14000.pdf", colors, 3, assay_data, fontsize, unscaled_K)
-res_14_GFKPP = plot_generalised_fkpp_delay(res_14[5].bgp, x_scale, t_scale, "lagergrenallplots14000.pdf", colors, 3, assay_data, fontsize, unscaled_K)
-res_16_FKD = plot_fisher_kolmogorov_delay(res_16[2].bgp, x_scale, t_scale, "allplots16000.pdf", colors, 4, assay_data, fontsize, unscaled_K)
-res_16_GFKPP = plot_generalised_fkpp_delay(res_16[5].bgp, x_scale, t_scale, "lagergrenallplots16000.pdf", colors, 4, assay_data, fontsize, unscaled_K)
-res_18_FKD = plot_fisher_kolmogorov_delay(res_18[2].bgp, x_scale, t_scale, "allplots18000.pdf", colors, 5, assay_data, fontsize, unscaled_K)
-res_18_GFKPP = plot_generalised_fkpp_delay(res_18[5].bgp, x_scale, t_scale, "lagergrenallplots18000.pdf", colors, 5, assay_data, fontsize, unscaled_K)
-res_20_FKD = plot_fisher_kolmogorov_delay(res_20[2].bgp, x_scale, t_scale, "allplots20000.pdf", colors, 6, assay_data, fontsize, unscaled_K)
-res_20_GFKPP = plot_generalised_fkpp_delay(res_20[5].bgp, x_scale, t_scale, "lagergrenallplots20000.pdf", colors, 6, assay_data, fontsize, unscaled_K)
+res_10_FKD = plot_fisher_kolmogorov_delay(res_10[2].bgp, x_scale, t_scale, "_allplots10000.pdf", colors, 1, assay_data, fontsize, unscaled_K)
+res_10_GFKPP = plot_generalised_fkpp_delay(res_10[5].bgp, x_scale, t_scale, "_lagergrenallplots10000.pdf", colors, 1, assay_data, fontsize, unscaled_K)
+res_12_FKD = plot_fisher_kolmogorov_delay(res_12[2].bgp, x_scale, t_scale, "_allplots12000.pdf", colors, 2, assay_data, fontsize, unscaled_K)
+res_12_GFKPP = plot_generalised_fkpp_delay(res_12[5].bgp, x_scale, t_scale, "_lagergrenallplots12000.pdf", colors, 2, assay_data, fontsize, unscaled_K)
+res_14_FKD = plot_fisher_kolmogorov_delay(res_14[2].bgp, x_scale, t_scale, "_allplots14000.pdf", colors, 3, assay_data, fontsize, unscaled_K)
+res_14_GFKPP = plot_generalised_fkpp_delay(res_14[5].bgp, x_scale, t_scale, "_lagergrenallplots14000.pdf", colors, 3, assay_data, fontsize, unscaled_K)
+res_16_FKD = plot_fisher_kolmogorov_delay(res_16[2].bgp, x_scale, t_scale, "_allplots16000.pdf", colors, 4, assay_data, fontsize, unscaled_K)
+res_16_GFKPP = plot_generalised_fkpp_delay(res_16[5].bgp, x_scale, t_scale, "_lagergrenallplots16000.pdf", colors, 4, assay_data, fontsize, unscaled_K)
+res_18_FKD = plot_fisher_kolmogorov_delay(res_18[2].bgp, x_scale, t_scale, "_allplots18000.pdf", colors, 5, assay_data, fontsize, unscaled_K)
+res_18_GFKPP = plot_generalised_fkpp_delay(res_18[5].bgp, x_scale, t_scale, "_lagergrenallplots18000.pdf", colors, 5, assay_data, fontsize, unscaled_K)
+res_20_FKD = plot_fisher_kolmogorov_delay(res_20[2].bgp, x_scale, t_scale, "_allplots20000.pdf", colors, 6, assay_data, fontsize, unscaled_K)
+res_20_GFKPP = plot_generalised_fkpp_delay(res_20[5].bgp, x_scale, t_scale, "_lagergrenallplots20000.pdf", colors, 6, assay_data, fontsize, unscaled_K)
 
-pde_figs = plot_pde_soln(res_10[2].bgp, res_12[2].bgp, res_14[2].bgp, res_16[2].bgp, res_18[2].bgp, res_20[2].bgp, x_scale, colors, assay_data, fontsize, "allpdeplots.pdf", K, unscaled_K)
+pde_figs = plot_pde_soln(res_10[2].bgp, res_12[2].bgp, res_14[2].bgp, res_16[2].bgp, res_18[2].bgp, res_20[2].bgp, x_scale, colors, assay_data, fontsize, "_allpdeplots.pdf", K, unscaled_K)
