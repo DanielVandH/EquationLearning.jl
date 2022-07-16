@@ -150,7 +150,7 @@ for (k, (i, j)) in enumerate(plot_cart_idx)
     heatmap!(spacetime_plots[i, j], X_rng * x_scale, T_rng * t_scale, μ / x_scale^2 / unscaled_K; colorrange=(0.0, 1.3))
 end
 
-cb = Colorbar(jin_assay_data_gp_bands_fig_spacetime[1:3, 3], colorrange=(0, 1.3), label = L"u(x, t)/K")
+cb = Colorbar(jin_assay_data_gp_bands_fig_spacetime[1:3, 3], colorrange=(0, 1.3), label=L"u(x, t)/K")
 save("figures/jin_assay_data_spacetime_plots.pdf", jin_assay_data_gp_bands_fig_spacetime, px_per_unit=2)
 
 #####################################################################
@@ -197,7 +197,7 @@ assaydata = deepcopy(assay_data)
 for j = 1:6
     rename!(assay_data[j], names(assay_data[j])[1] => :Column)
     assay_data[j] = assay_data[j][assay_data[j][:, :Column].!=1.0, :]
-end 
+end
 
 #####################################################################
 ## Model fits
@@ -324,7 +324,7 @@ end
 function plot_fisher_kolmogorov_delay(bgp::BootResults, x_scale, t_scale, filename, colors, dat_idx, assay_data, fontsize, unscaled_K)
     dat = assay_data[dat_idx]
     x_pde = dat.Position
-    t_pde = dat.Time 
+    t_pde = dat.Time
     u_pde = dat.AvgDens
     pde_gp = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType="gp")
     pde_data = boot_pde_solve(bgp, x_pde, t_pde, u_pde; ICType="data")
@@ -646,6 +646,7 @@ T_params_20_5 = [-1.0, 0.15 * t_scale]
 D_params_20_5 = [K, 675.0 * t_scale / x_scale^2, 1954.0 * t_scale / x_scale^2, 0.98]
 R_params_20_5 = [K, 0.09 * t_scale]
 
+t0_500 = time()
 res_10 = model_fits(assay_data, 1, bootstrap_setup, GP_Restarts, nugget,
     T_params_10_1, T_params_10_2, T_params_10_3, T_params_10_4, T_params_10_5,
     D_params_10_1, D_params_10_2, D_params_10_3, D_params_10_4, D_params_10_5,
@@ -687,6 +688,8 @@ res_20 = model_fits(assay_data, 6, bootstrap_setup, GP_Restarts, 1e-4,
     R_params_20_1, R_params_20_2, R_params_20_3, R_params_20_4, R_params_20_5,
     x_scale, t_scale,
     pde_setup, optim_setup, 2923423431)
+t1_500 = time()
+time_500 = t1_500 - t0_500
 
 Random.seed!(2921)
 res_10_FKD = plot_fisher_kolmogorov_delay(res_10[2].bgp, x_scale, t_scale, "allplots10000.pdf", colors, 1, assay_data, fontsize, unscaled_K)
@@ -703,3 +706,155 @@ res_20_FKD = plot_fisher_kolmogorov_delay(res_20[2].bgp, x_scale, t_scale, "allp
 res_20_GFKPP = plot_generalised_fkpp_delay(res_20[5].bgp, x_scale, t_scale, "lagergrenallplots20000.pdf", colors, 6, assay_data, fontsize, unscaled_K)
 
 pde_figs = plot_pde_soln(res_10[2].bgp, res_12[2].bgp, res_14[2].bgp, res_16[2].bgp, res_18[2].bgp, res_20[2].bgp, x_scale, colors, assay_data, fontsize, "allpdeplots.pdf", K, unscaled_K)
+
+#####################################################################
+## Changing the number of gridpoints 
+#####################################################################
+
+## 250 
+
+meshPoints = LinRange(75.0 / x_scale, 1875.0 / x_scale, 250)
+pde_setup_250 = @set pde_setup.meshPoints = meshPoints
+
+t0_250 = time()
+res_10_250 = model_fits(assay_data, 1, bootstrap_setup, GP_Restarts, nugget,
+    T_params_10_1, T_params_10_2, T_params_10_3, T_params_10_4, T_params_10_5,
+    D_params_10_1, D_params_10_2, D_params_10_3, D_params_10_4, D_params_10_5,
+    R_params_10_1, R_params_10_2, R_params_10_3, R_params_10_4, R_params_10_5,
+    x_scale, t_scale,
+    pde_setup_250, optim_setup, 2919211)
+
+res_12_250 = model_fits(assay_data, 2, bootstrap_setup, GP_Restarts, nugget,
+    T_params_12_1, T_params_12_2, T_params_12_3, T_params_12_4, T_params_12_5,
+    D_params_12_1, D_params_12_2, D_params_12_3, D_params_12_4, D_params_12_5,
+    R_params_12_1, R_params_12_2, R_params_12_3, R_params_12_4, R_params_12_5,
+    x_scale, t_scale,
+    pde_setup_250, optim_setup, 9998511)
+
+res_14_250 = model_fits(assay_data, 3, bootstrap_setup, GP_Restarts, nugget,
+    T_params_14_1, T_params_14_2, T_params_14_3, T_params_14_4, T_params_14_5,
+    D_params_14_1, D_params_14_2, D_params_14_3, D_params_14_4, D_params_14_5,
+    R_params_14_1, R_params_14_2, R_params_14_3, R_params_14_4, R_params_14_5,
+    x_scale, t_scale,
+    pde_setup_250, optim_setup, 64435211)
+
+res_16_250 = model_fits(assay_data, 4, bootstrap_setup, 50, nugget,
+    T_params_16_1, T_params_16_2, T_params_16_3, T_params_16_4, T_params_16_5,
+    D_params_16_1, D_params_16_2, D_params_16_3, D_params_16_4, D_params_16_5,
+    R_params_16_1, R_params_16_2, R_params_16_3, R_params_16_4, R_params_16_5,
+    x_scale, t_scale,
+    pde_setup_250, optim_setup, 323212329211)
+
+res_18_250 = model_fits(assay_data, 5, bootstrap_setup, GP_Restarts, nugget,
+    T_params_18_1, T_params_18_2, T_params_18_3, T_params_18_4, T_params_18_5,
+    D_params_18_1, D_params_18_2, D_params_18_3, D_params_18_4, D_params_18_5,
+    R_params_18_1, R_params_18_2, R_params_18_3, R_params_18_4, R_params_18_5,
+    x_scale, t_scale,
+    pde_setup_250, optim_setup, 331)
+
+res_20_250 = model_fits(assay_data, 6, bootstrap_setup, GP_Restarts, 1e-4,
+    T_params_20_1, T_params_20_2, T_params_20_3, T_params_20_4, T_params_20_5,
+    D_params_20_1, D_params_20_2, D_params_20_3, D_params_20_4, D_params_20_5,
+    R_params_20_1, R_params_20_2, R_params_20_3, R_params_20_4, R_params_20_5,
+    x_scale, t_scale,
+    pde_setup_250, optim_setup, 2923423431)
+t1_250 = time()
+time_250 = t1_250 - t0_250
+
+## 125
+meshPoints = LinRange(75.0 / x_scale, 1875.0 / x_scale, 125)
+pde_setup_125 = @set pde_setup.meshPoints = meshPoints
+
+t0_125 = time()
+res_10_125 = model_fits(assay_data, 1, bootstrap_setup, GP_Restarts, nugget,
+    T_params_10_1, T_params_10_2, T_params_10_3, T_params_10_4, T_params_10_5,
+    D_params_10_1, D_params_10_2, D_params_10_3, D_params_10_4, D_params_10_5,
+    R_params_10_1, R_params_10_2, R_params_10_3, R_params_10_4, R_params_10_5,
+    x_scale, t_scale,
+    pde_setup_125, optim_setup, 2919211)
+
+res_12_125 = model_fits(assay_data, 2, bootstrap_setup, GP_Restarts, nugget,
+    T_params_12_1, T_params_12_2, T_params_12_3, T_params_12_4, T_params_12_5,
+    D_params_12_1, D_params_12_2, D_params_12_3, D_params_12_4, D_params_12_5,
+    R_params_12_1, R_params_12_2, R_params_12_3, R_params_12_4, R_params_12_5,
+    x_scale, t_scale,
+    pde_setup_125, optim_setup, 9998511)
+
+res_14_125 = model_fits(assay_data, 3, bootstrap_setup, GP_Restarts, nugget,
+    T_params_14_1, T_params_14_2, T_params_14_3, T_params_14_4, T_params_14_5,
+    D_params_14_1, D_params_14_2, D_params_14_3, D_params_14_4, D_params_14_5,
+    R_params_14_1, R_params_14_2, R_params_14_3, R_params_14_4, R_params_14_5,
+    x_scale, t_scale,
+    pde_setup_125, optim_setup, 64435211)
+
+res_16_125 = model_fits(assay_data, 4, bootstrap_setup, 50, nugget,
+    T_params_16_1, T_params_16_2, T_params_16_3, T_params_16_4, T_params_16_5,
+    D_params_16_1, D_params_16_2, D_params_16_3, D_params_16_4, D_params_16_5,
+    R_params_16_1, R_params_16_2, R_params_16_3, R_params_16_4, R_params_16_5,
+    x_scale, t_scale,
+    pde_setup_125, optim_setup, 323212329211)
+
+res_18_125 = model_fits(assay_data, 5, bootstrap_setup, GP_Restarts, nugget,
+    T_params_18_1, T_params_18_2, T_params_18_3, T_params_18_4, T_params_18_5,
+    D_params_18_1, D_params_18_2, D_params_18_3, D_params_18_4, D_params_18_5,
+    R_params_18_1, R_params_18_2, R_params_18_3, R_params_18_4, R_params_18_5,
+    x_scale, t_scale,
+    pde_setup_125, optim_setup, 331)
+
+res_20_125 = model_fits(assay_data, 6, bootstrap_setup, GP_Restarts, 1e-4,
+    T_params_20_1, T_params_20_2, T_params_20_3, T_params_20_4, T_params_20_5,
+    D_params_20_1, D_params_20_2, D_params_20_3, D_params_20_4, D_params_20_5,
+    R_params_20_1, R_params_20_2, R_params_20_3, R_params_20_4, R_params_20_5,
+    x_scale, t_scale,
+    pde_setup_125, optim_setup, 2923423431)
+t1_125 = time()
+time_125 = t1_125 - t0_125
+
+## 50
+meshPoints = LinRange(75.0 / x_scale, 1875.0 / x_scale, 50)
+pde_setup_50 = @set pde_setup.meshPoints = meshPoints
+
+t0_50 = time()
+res_10_50 = model_fits(assay_data, 1, bootstrap_setup, GP_Restarts, nugget,
+    T_params_10_1, T_params_10_2, T_params_10_3, T_params_10_4, T_params_10_5,
+    D_params_10_1, D_params_10_2, D_params_10_3, D_params_10_4, D_params_10_5,
+    R_params_10_1, R_params_10_2, R_params_10_3, R_params_10_4, R_params_10_5,
+    x_scale, t_scale,
+    pde_setup_50, optim_setup, 2919211)
+
+res_12_50 = model_fits(assay_data, 2, bootstrap_setup, GP_Restarts, nugget,
+    T_params_12_1, T_params_12_2, T_params_12_3, T_params_12_4, T_params_12_5,
+    D_params_12_1, D_params_12_2, D_params_12_3, D_params_12_4, D_params_12_5,
+    R_params_12_1, R_params_12_2, R_params_12_3, R_params_12_4, R_params_12_5,
+    x_scale, t_scale,
+    pde_setup_50, optim_setup, 9998511)
+
+res_14_50 = model_fits(assay_data, 3, bootstrap_setup, GP_Restarts, nugget,
+    T_params_14_1, T_params_14_2, T_params_14_3, T_params_14_4, T_params_14_5,
+    D_params_14_1, D_params_14_2, D_params_14_3, D_params_14_4, D_params_14_5,
+    R_params_14_1, R_params_14_2, R_params_14_3, R_params_14_4, R_params_14_5,
+    x_scale, t_scale,
+    pde_setup_50, optim_setup, 64435211)
+
+res_16_50 = model_fits(assay_data, 4, bootstrap_setup, 50, nugget,
+    T_params_16_1, T_params_16_2, T_params_16_3, T_params_16_4, T_params_16_5,
+    D_params_16_1, D_params_16_2, D_params_16_3, D_params_16_4, D_params_16_5,
+    R_params_16_1, R_params_16_2, R_params_16_3, R_params_16_4, R_params_16_5,
+    x_scale, t_scale,
+    pde_setup_50, optim_setup, 323212329211)
+
+res_18_50 = model_fits(assay_data, 5, bootstrap_setup, GP_Restarts, nugget,
+    T_params_18_1, T_params_18_2, T_params_18_3, T_params_18_4, T_params_18_5,
+    D_params_18_1, D_params_18_2, D_params_18_3, D_params_18_4, D_params_18_5,
+    R_params_18_1, R_params_18_2, R_params_18_3, R_params_18_4, R_params_18_5,
+    x_scale, t_scale,
+    pde_setup_50, optim_setup, 331)
+
+res_20_50 = model_fits(assay_data, 6, bootstrap_setup, GP_Restarts, 1e-4,
+    T_params_20_1, T_params_20_2, T_params_20_3, T_params_20_4, T_params_20_5,
+    D_params_20_1, D_params_20_2, D_params_20_3, D_params_20_4, D_params_20_5,
+    R_params_20_1, R_params_20_2, R_params_20_3, R_params_20_4, R_params_20_5,
+    x_scale, t_scale,
+    pde_setup_50, optim_setup, 2923423431)
+t1_50 = time()
+time_50 = t1_50 - t0_50
