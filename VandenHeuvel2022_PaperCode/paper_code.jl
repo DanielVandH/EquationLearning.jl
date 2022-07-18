@@ -858,3 +858,206 @@ res_20_50 = model_fits(assay_data, 6, bootstrap_setup, GP_Restarts, 1e-4,
     pde_setup_50, optim_setup, 2923423431)
 t1_50 = time()
 time_50 = t1_50 - t0_50
+
+## Analysis. Yes the lines below would be better suited in a loop (as would the repeated lines throughout this whole script, actually...)
+times_taken = [time_500, time_250, time_125, time_50] / 3600
+
+colors = [:red, :blue, :green, :black]
+# linestyles = [:dash, :dot, :dashdot, :dashdotdot]
+linestyles = [:solid, :solid, :solid, :solid]
+lw = 2
+
+fig = Figure(fontsize=fontsize, resolution=(1800, 1800))
+
+ax = Axis(fig[1, 1], xlabel="Coefficient", ylabel="Scaled value",
+    title="(a): 10,000 cells per well.", titlealign=:left, width=800, height=400,
+    xticks=([1, 2, 3, 4, 5], [L"\alpha_1/\hat{\alpha}_1", L"\alpha_2/\hat{\alpha}_2", L"\beta_1/\hat{\beta}_1", L"\gamma_1/\hat{\gamma}_1", L"PDE Error$/$Scale"]))
+
+for (j, res) in pairs([res_10[2], res_10_250[2], res_10_125[2], res_10_50[2]])
+    i = 1
+    scale = mean(res_10[2].delayCIs[1, :])
+    lines!(ax, [i, i], res.delayCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[1, 1], res.delayCIs[1, 1], NaN, res.delayCIs[1, 2], res.delayCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 2
+    scale = mean(res_10[2].delayCIs[2, :])
+    lines!(ax, [i, i], res.delayCIs[2, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[2, 1], res.delayCIs[2, 1], NaN, res.delayCIs[2, 2], res.delayCIs[2, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 3
+    scale = mean(res_10[2].diffusionCIs[1, :])
+    lines!(ax, [i, i], res.diffusionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.diffusionCIs[1, 1], res.diffusionCIs[1, 1], NaN, res.diffusionCIs[1, 2], res.diffusionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 4
+    scale = mean(res_10[2].reactionCIs[1, :])
+    lines!(ax, [i, i], res.reactionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.reactionCIs[1, 1], res.reactionCIs[1, 1], NaN, res.reactionCIs[1, 2], res.reactionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 5
+    scale = mean(res_10[2].pde_error)
+    lines!(ax, [i, i], res.pde_error / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.pde_error[1], res.pde_error[1], NaN, res.pde_error[2], res.pde_error[2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+end
+
+ax = Axis(fig[1, 2], xlabel="Coefficient", ylabel="Scaled value",
+    title="(b): 12,000 cells per well.", titlealign=:left, width=800, height=400,
+    xticks=([1, 2, 3, 4, 5], [L"\alpha_1/\hat{\alpha}_1", L"\alpha_2/\hat{\alpha}_2", L"\beta_1/\hat{\beta}_1", L"\gamma_1/\hat{\gamma}_1", L"PDE Error$/$Scale"]))
+
+for (j, res) in pairs([res_12[2], res_12_250[2], res_12_125[2], res_12_50[2]])
+    i = 1
+    scale = mean(res_12[2].delayCIs[1, :])
+    lines!(ax, [i, i], res.delayCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[1, 1], res.delayCIs[1, 1], NaN, res.delayCIs[1, 2], res.delayCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 2
+    scale = mean(res_12[2].delayCIs[2, :])
+    lines!(ax, [i, i], res.delayCIs[2, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[2, 1], res.delayCIs[2, 1], NaN, res.delayCIs[2, 2], res.delayCIs[2, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 3
+    scale = mean(res_12[2].diffusionCIs[1, :])
+    lines!(ax, [i, i], res.diffusionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.diffusionCIs[1, 1], res.diffusionCIs[1, 1], NaN, res.diffusionCIs[1, 2], res.diffusionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 4
+    scale = mean(res_12[2].reactionCIs[1, :])
+    lines!(ax, [i, i], res.reactionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.reactionCIs[1, 1], res.reactionCIs[1, 1], NaN, res.reactionCIs[1, 2], res.reactionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 5
+    scale = mean(res_12[2].pde_error)
+    lines!(ax, [i, i], res.pde_error / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.pde_error[1], res.pde_error[1], NaN, res.pde_error[2], res.pde_error[2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+end
+
+ax = Axis(fig[2, 1], xlabel="Coefficient", ylabel="Scaled value",
+    title="(c): 14,000 cells per well.", titlealign=:left, width=800, height=400,
+    xticks=([1, 2, 3, 4, 5], [L"\alpha_1/\hat{\alpha}_1", L"\alpha_2/\hat{\alpha}_2", L"\beta_1/\hat{\beta}_1", L"\gamma_1/\hat{\gamma}_1", L"PDE Error$/$Scale"]))
+
+for (j, res) in pairs([res_14[2], res_14_250[2], res_14_125[2], res_14_50[2]])
+    i = 1
+    scale = mean(res_14[2].delayCIs[1, :])
+    lines!(ax, [i, i], res.delayCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[1, 1], res.delayCIs[1, 1], NaN, res.delayCIs[1, 2], res.delayCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 2
+    scale = mean(res_14[2].delayCIs[2, :])
+    lines!(ax, [i, i], res.delayCIs[2, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[2, 1], res.delayCIs[2, 1], NaN, res.delayCIs[2, 2], res.delayCIs[2, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 3
+    scale = mean(res_14[2].diffusionCIs[1, :])
+    lines!(ax, [i, i], res.diffusionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.diffusionCIs[1, 1], res.diffusionCIs[1, 1], NaN, res.diffusionCIs[1, 2], res.diffusionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 4
+    scale = mean(res_14[2].reactionCIs[1, :])
+    lines!(ax, [i, i], res.reactionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.reactionCIs[1, 1], res.reactionCIs[1, 1], NaN, res.reactionCIs[1, 2], res.reactionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 5
+    scale = mean(res_14[2].pde_error)
+    lines!(ax, [i, i], res.pde_error / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.pde_error[1], res.pde_error[1], NaN, res.pde_error[2], res.pde_error[2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+end
+
+ax = Axis(fig[2, 2], xlabel="Coefficient", ylabel="Scaled value",
+    title="(d): 16,000 cells per well.", titlealign=:left, width=800, height=400,
+    xticks=([1, 2, 3, 4, 5], [L"\alpha_1/\hat{\alpha}_1", L"\alpha_2/\hat{\alpha}_2", L"\beta_1/\hat{\beta}_1", L"\gamma_1/\hat{\gamma}_1", L"PDE Error$/$Scale"]))
+
+for (j, res) in pairs([res_16[2], res_16_250[2], res_16_125[2], res_16_50[2]])
+    i = 1
+    scale = mean(res_16[2].delayCIs[1, :])
+    lines!(ax, [i, i], res.delayCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[1, 1], res.delayCIs[1, 1], NaN, res.delayCIs[1, 2], res.delayCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 2
+    scale = mean(res_16[2].delayCIs[2, :])
+    lines!(ax, [i, i], res.delayCIs[2, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[2, 1], res.delayCIs[2, 1], NaN, res.delayCIs[2, 2], res.delayCIs[2, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 3
+    scale = mean(res_16[2].diffusionCIs[1, :])
+    lines!(ax, [i, i], res.diffusionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.diffusionCIs[1, 1], res.diffusionCIs[1, 1], NaN, res.diffusionCIs[1, 2], res.diffusionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 4
+    scale = mean(res_16[2].reactionCIs[1, :])
+    lines!(ax, [i, i], res.reactionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.reactionCIs[1, 1], res.reactionCIs[1, 1], NaN, res.reactionCIs[1, 2], res.reactionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 5
+    scale = mean(res_16[2].pde_error)
+    lines!(ax, [i, i], res.pde_error / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.pde_error[1], res.pde_error[1], NaN, res.pde_error[2], res.pde_error[2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+end
+
+ax = Axis(fig[3, 1], xlabel="Coefficient", ylabel="Scaled value",
+    title="(e): 18,000 cells per well.", titlealign=:left, width=800, height=400,
+    xticks=([1, 2, 3, 4, 5], [L"\alpha_1/\hat{\alpha}_1", L"\alpha_2/\hat{\alpha}_2", L"\beta_1/\hat{\beta}_1", L"\gamma_1/\hat{\gamma}_1", L"PDE Error$/$Scale"]))
+
+for (j, res) in pairs([res_18[2], res_18_250[2], res_18_125[2], res_18_50[2]])
+    i = 1
+    scale = mean(res_18[2].delayCIs[1, :])
+    lines!(ax, [i, i], res.delayCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[1, 1], res.delayCIs[1, 1], NaN, res.delayCIs[1, 2], res.delayCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 2
+    scale = mean(res_18[2].delayCIs[2, :])
+    lines!(ax, [i, i], res.delayCIs[2, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[2, 1], res.delayCIs[2, 1], NaN, res.delayCIs[2, 2], res.delayCIs[2, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 3
+    scale = mean(res_18[2].diffusionCIs[1, :])
+    lines!(ax, [i, i], res.diffusionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.diffusionCIs[1, 1], res.diffusionCIs[1, 1], NaN, res.diffusionCIs[1, 2], res.diffusionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 4
+    scale = mean(res_18[2].reactionCIs[1, :])
+    lines!(ax, [i, i], res.reactionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.reactionCIs[1, 1], res.reactionCIs[1, 1], NaN, res.reactionCIs[1, 2], res.reactionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 5
+    scale = mean(res_18[2].pde_error)
+    lines!(ax, [i, i], res.pde_error / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.pde_error[1], res.pde_error[1], NaN, res.pde_error[2], res.pde_error[2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+end
+
+ax = Axis(fig[3, 2], xlabel="Coefficient", ylabel="Scaled value",
+    title="(f): 20,000 cells per well.", titlealign=:left, width=800, height=400,
+    xticks=([1, 2, 3, 4, 5], [L"\alpha_1/\hat{\alpha}_1", L"\alpha_2/\hat{\alpha}_2", L"\beta_1/\hat{\beta}_1", L"\gamma_1/\hat{\gamma}_1", L"PDE Error$/$Scale"]))
+
+for (j, res) in pairs([res_20[2], res_20_250[2], res_20_125[2], res_20_50[2]])
+    i = 1
+    scale = mean(res_20[2].delayCIs[1, :])
+    lines!(ax, [i, i], res.delayCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[1, 1], res.delayCIs[1, 1], NaN, res.delayCIs[1, 2], res.delayCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 2
+    scale = mean(res_20[2].delayCIs[2, :])
+    lines!(ax, [i, i], res.delayCIs[2, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.delayCIs[2, 1], res.delayCIs[2, 1], NaN, res.delayCIs[2, 2], res.delayCIs[2, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 3
+    scale = mean(res_20[2].diffusionCIs[1, :])
+    lines!(ax, [i, i], res.diffusionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.diffusionCIs[1, 1], res.diffusionCIs[1, 1], NaN, res.diffusionCIs[1, 2], res.diffusionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 4
+    scale = mean(res_20[2].reactionCIs[1, :])
+    lines!(ax, [i, i], res.reactionCIs[1, :] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.reactionCIs[1, 1], res.reactionCIs[1, 1], NaN, res.reactionCIs[1, 2], res.reactionCIs[1, 2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+
+    i = 5
+    scale = mean(res_20[2].pde_error)
+    lines!(ax, [i, i], res.pde_error / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+    lines!(ax, [i - 0.2, i + 0.2, NaN, i - 0.2, i + 0.2], [res.pde_error[1], res.pde_error[1], NaN, res.pde_error[2], res.pde_error[2]] / scale, linestyle=linestyles[j], color=colors[j], linewidth=lw)
+end
+legendentries = OrderedDict("500" => LineElement(linestyle=linestyles[1], linewidth=lw, color=colors[1]),
+    "250" => LineElement(linestyle=linestyles[2], linewidth=lw, color=colors[2]),
+    "125" => LineElement(linestyle=linestyles[3], linewidth=lw, color=colors[3]),
+    "50" => LineElement(linestyle=linestyles[4], linewidth=lw, color=colors[4]))
+Legend(fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], L"$N_p$", orientation=:horizontal, labelsize=fontsize, titlesize=fontsize, titleposition=:left)
+resize_to_layout!(fig)
+save("figures/np_comparisons.pdf", fig, px_per_unit=2)
