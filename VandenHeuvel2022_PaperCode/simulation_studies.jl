@@ -779,12 +779,12 @@ Legend(resultFigures[1:3, 4], [values(legendentries)...], [keys(legendentries)..
 save("figures/simulation_study_bgp1_final_results_2.pdf", resultFigures, px_per_unit=2)
 
 # Plot all of the PDE results 
-bgps_all = [bgp1, bgp2, bgp3, bgp4, bgp5]
+bgps_all = [bgp2, bgp1, bgp4, bgp3, bgp5]
 plot_positions = [(1, 1), (1, 2), (2, 1), (2, 2), (3, 1)]
 pde_gp1 = boot_pde_solve(bgp1, x_pde, t_pde, u_pde; ICType="gp")
 model_names = ["S6", "S7", "S8", "S9", "S10"]
 alphabets = ["(a)", "(b)", "(c)", "(d)", "(e)"]
-fig = Figure(fontsize=fontsize, resolution=(1800, 800))
+fig = Figure(fontsize=34, resolution=(1800, 800))
 for i in 1:length(bgps_all)
     bgpi = bgps_all[i]
     pde_gpi = boot_pde_solve(bgpi, x_pde, t_pde, u_pde; ICType="gp")
@@ -793,14 +793,14 @@ for i in 1:length(bgps_all)
     M = length(bgpi.pde_setup.δt)
     new_axis = Axis(fig[plot_positions[i][1], plot_positions[i][2]], xlabel=L"$x$ (μm)", ylabel=L"u(x, t)/K",
         title=@sprintf("%s: PDE for model (%s). Error: (%.4g, %.4g)", alphabets[i], model_names[i], err_ci[1], err_ci[2]),
-        titlealign=:left, width = 900, height = 450)
+        titlealign=:left, width = 800, height = 350)
     @views for j in 1:M
         lines!(new_axis, bgpi.pde_setup.meshPoints * x_scale, soln_vals_mean[:, j] / x_scale^2 / unscaled_K, color=colors[j])
         band!(new_axis, bgpi.pde_setup.meshPoints * x_scale, soln_vals_upper[:, j] / x_scale^2 / unscaled_K, soln_vals_lower[:, j] / x_scale^2 / unscaled_K, color=(colors[j], 0.35))
         CairoMakie.scatter!(new_axis, x_pde[t_pde.==bgpi.pde_setup.δt[j]] * x_scale, u_pde[t_pde.==bgpi.pde_setup.δt[j]] / x_scale^2 / unscaled_K, color=colors[j], markersize=3)
     end
 end
-Legend(fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:horizontal, labelsize=fontsize, titlesize=fontsize, titleposition=:left)
+Legend(fig[0, 1:2], [values(legendentries)...], [keys(legendentries)...], L"$t$ (h)", orientation=:horizontal, labelsize=34, titlesize=34, titleposition=:left)
 resize_to_layout!(fig)
 fig
 save("figures/simulation_study_bgp1_final_results_all_models.pdf", fig, px_per_unit=2)
