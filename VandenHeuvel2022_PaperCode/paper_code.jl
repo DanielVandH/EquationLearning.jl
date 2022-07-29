@@ -707,6 +707,77 @@ res_20_GFKPP = plot_generalised_fkpp_delay(res_20[5].bgp, x_scale, t_scale, "lag
 
 pde_figs = plot_pde_soln(res_10[2].bgp, res_12[2].bgp, res_14[2].bgp, res_16[2].bgp, res_18[2].bgp, res_20[2].bgp, x_scale, colors, assay_data, fontsize, "allpdeplots.pdf", K, unscaled_K)
 
+function StatsBase.mode(ker::T) where {T<:UnivariateKDE} # type piracy! 
+    return ker.x[argmax(ker.density)]
+end
+function compute_mode_1(res; roundval=true)
+    β₁_mode = mode(KernelDensity.kde(res[1].bgp.diffusionBases[1, :] * res[1].bgp.D_params[1] * x_scale^2 / t_scale))
+    γ₁_mode = mode(KernelDensity.kde(res[1].bgp.reactionBases[1, :] * res[1].bgp.R_params[2] / t_scale))
+    return roundval ? (round(β₁_mode; digits=3), round(γ₁_mode; digits=3)) : (β₁_mode, γ₁_mode)
+end
+function compute_mode_2(res; roundval=true)
+    α₁_mode = mode(KernelDensity.kde(res[2].bgp.delayBases[1, :] * res[2].bgp.T_params[1]))
+    α₂_mode = mode(KernelDensity.kde(res[2].bgp.delayBases[2, :] * res[2].bgp.T_params[2] / t_scale))
+    β₁_mode = mode(KernelDensity.kde(res[2].bgp.diffusionBases[1, :] * res[2].bgp.D_params[1] * x_scale^2 / t_scale))
+    γ₁_mode = mode(KernelDensity.kde(res[2].bgp.reactionBases[1, :] * res[2].bgp.R_params[2] / t_scale))
+    return roundval ? (round(α₁_mode; digits=3), round(α₂_mode; digits=3), round(β₁_mode; digits=3), round(γ₁_mode; digits=3)) : (α₁_mode, α₂_mode, β₁_mode, γ₁_mode)
+end
+function compute_mode_3(res; roundval=true)
+    β₂_mode = mode(KernelDensity.kde(res[3].bgp.diffusionBases[1, :] * res[3].bgp.D_params[2] * x_scale^2 / t_scale))
+    γ₁_mode = mode(KernelDensity.kde(res[3].bgp.reactionBases[1, :] * res[3].bgp.R_params[2] / t_scale))
+    return roundval ? (round(β₂_mode; digits=3), round(γ₁_mode; digits=3)) : (β₂_mode, γ₁_mode)
+end
+function compute_mode_4(res; roundval=true)
+    α₁_mode = mode(KernelDensity.kde(res[4].bgp.delayBases[1, :] * res[4].bgp.T_params[1]))
+    α₂_mode = mode(KernelDensity.kde(res[4].bgp.delayBases[2, :] * res[4].bgp.T_params[2] / t_scale))
+    β₂_mode = mode(KernelDensity.kde(res[4].bgp.diffusionBases[1, :] * res[4].bgp.D_params[2] * x_scale^2 / t_scale))
+    γ₁_mode = mode(KernelDensity.kde(res[4].bgp.reactionBases[1, :] * res[4].bgp.R_params[2] / t_scale))
+    return roundval ? (round(α₁_mode; digits=3), round(α₂_mode; digits=3), round(β₂_mode; digits=3), round(γ₁_mode; digits=3)) : (α₁_mode, α₂_mode, β₂_mode, γ₁_mode)
+end
+function compute_mode_5(res; roundval=true)
+    α₁_mode = mode(KernelDensity.kde(res[5].bgp.delayBases[1, :] * res[5].bgp.T_params[1]))
+    α₂_mode = mode(KernelDensity.kde(res[5].bgp.delayBases[2, :] * res[5].bgp.T_params[2] / t_scale))
+    β₁_mode = mode(KernelDensity.kde(res[5].bgp.diffusionBases[1, :] * res[5].bgp.D_params[2] * x_scale^2 / t_scale))
+    β₂_mode = mode(KernelDensity.kde(res[5].bgp.diffusionBases[2, :] * res[5].bgp.D_params[3] * x_scale^2 / t_scale))
+    β₃_mode = mode(KernelDensity.kde(res[5].bgp.diffusionBases[3, :] * res[5].bgp.D_params[4]))
+    γ₁_mode = mode(KernelDensity.kde(res[5].bgp.reactionBases[1, :] * res[5].bgp.R_params[2] / t_scale))
+    return roundval ? (round(α₁_mode; digits=3), round(α₂_mode; digits=3), round(β₁_mode; digits=3), round(β₂_mode; digits=3), round(β₃_mode; digits=3), round(γ₁_mode; digits=3)) : (α₁_mode, α₂_mode, β₁_mode, β₂_mode, β₃_mode, γ₁_mode)
+end
+compute_mode_1(res_10)
+compute_mode_2(res_10)
+compute_mode_3(res_10)
+compute_mode_4(res_10)
+compute_mode_5(res_10)
+
+compute_mode_1(res_12)
+compute_mode_2(res_12)
+compute_mode_3(res_12)
+compute_mode_4(res_12)
+compute_mode_5(res_12)
+
+compute_mode_1(res_14)
+compute_mode_2(res_14)
+compute_mode_3(res_14)
+compute_mode_4(res_14)
+compute_mode_5(res_14)
+
+compute_mode_1(res_16)
+compute_mode_2(res_16)
+compute_mode_3(res_16)
+compute_mode_4(res_16)
+compute_mode_5(res_16)
+
+compute_mode_1(res_18)
+compute_mode_2(res_18)
+compute_mode_3(res_18)
+compute_mode_4(res_18)
+compute_mode_5(res_18)
+
+compute_mode_1(res_20)
+compute_mode_2(res_20)
+compute_mode_3(res_20)
+compute_mode_4(res_20)
+compute_mode_5(res_20)
 #####################################################################
 ## Changing the number of gridpoints 
 #####################################################################
