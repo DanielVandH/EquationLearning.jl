@@ -9,7 +9,7 @@ delay, diffusion, and reaction model, for some cell data $u$ and points $(x, t)$
 \frac{\partial u}{\partial t} = T(t; \boldsymbol{\alpha})\left[\frac{\partial}{\partial x}\left(D(u; \boldsymbol{\beta})\frac{\partial u}{\partial x}\right) + R(u; \boldsymbol{\gamma})\right].
 ```
 
-The package fits a Gaussian process to the data $u$ at these points $(x, t)$ and uses it to draw samples from, allowing for multiple estimates of the parameters $\mathbf{\alpha}$, $\mathbf{\beta}$, and $\mathbf{\gamma}$ to be obtained, thus providing uncertainty quantification for these learned mechanisms. See our paper https://www.biorxiv.org/content/10.1101/2022.05.12.491596v1 for more details. The main function exported by this package is `bootstrap_gp` which actual fits a given model with uncertainty quantification.
+The package fits a Gaussian process to the data $u$ at these points $(x, t)$ and uses it to draw samples from, allowing for multiple estimates of the parameters $\mathbf{\alpha}$, $\mathbf{\beta}$, and $\mathbf{\gamma}$ to be obtained, thus providing uncertainty quantification for these learned mechanisms. See our paper https://doi.org/10.1371/journal.pcbi.1010599 for more details. The main function exported by this package is `bootstrap_gp` which actual fits a given model with uncertainty quantification.
 
 ```@contents
 ```
