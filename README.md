@@ -2,7 +2,7 @@
 
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://danielvandh.github.io/EquationLearning.jl/dev/home.html) 
 
-This package contains code to perform equation learning with bootstrapping using Gaussian processes, as described in our paper https://www.biorxiv.org/content/10.1101/2022.05.12.491596v1. Currently the method is only implemented for partial differential equations of the form
+This package contains code to perform equation learning with bootstrapping using Gaussian processes, as described in our paper https://doi.org/10.1371/journal.pcbi.1010599. Currently the method is only implemented for partial differential equations of the form
 
 ![equation](http://latex.codecogs.com/svg.latex?%5Cfrac%7B%5Cpartial%20u%7D%7B%5Cpartial%20t%7D%20=%20T(t;%20%5Cboldsymbol%7B%5Calpha%7D)%20%5Cleft%5B%5Cfrac%7B%5Cpartial%7D%7B%5Cpartial%20x%7D%5Cleft(D(u;%20%5Cboldsymbol%7B%5Cbeta%7D)%5Cfrac%7B%5Cpartial%20u%7D%7B%5Cpartial%20x%7D%5Cright)%20&plus;%20R(u;%20%5Cboldsymbol%7B%5Cgamma%7D)%5Cright%5D,)
 
